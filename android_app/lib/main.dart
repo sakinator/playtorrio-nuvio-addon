@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'config.dart';
 import 'scraper_engine.dart';
 import 'server_service.dart';
+import 'torbox_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -49,6 +50,15 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
   final FocusNode _openWebFocus = FocusNode();
   final FocusNode _refreshIpFocus = FocusNode();
 
+  final TextEditingController _torboxKeyController = TextEditingController();
+  final FocusNode _torboxInputFocus = FocusNode();
+  final FocusNode _torboxSaveFocus = FocusNode();
+  final FocusNode _torboxKeyLinkFocus = FocusNode();
+  bool _obscureTorboxKey = true;
+  bool _isValidatingTorbox = false;
+  String? _torboxStatusMessage;
+  bool _isTorboxValid = false;
+
   @override
   void initState() {
     super.initState();
@@ -56,6 +66,12 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _startStopFocus.requestFocus();
     });
+
+    final currentKey = AddonConfig.instance.torboxApiKey;
+    _torboxKeyController.text = currentKey;
+    if (currentKey.isNotEmpty) {
+      _validateTorboxKeySilent(currentKey);
+    }
   }
 
   @override
@@ -64,7 +80,51 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
     _copyManifestFocus.dispose();
     _openWebFocus.dispose();
     _refreshIpFocus.dispose();
+    _torboxKeyController.dispose();
+    _torboxInputFocus.dispose();
+    _torboxSaveFocus.dispose();
+    _torboxKeyLinkFocus.dispose();
     super.dispose();
+  }
+
+  Future<void> _validateTorboxKeySilent(String key) async {
+    if (key.trim().isEmpty) return;
+    final res = await TorboxService.instance.validateAccount(key.trim());
+    if (mounted) {
+      setState(() {
+        _isTorboxValid = res['valid'] == true;
+        _torboxStatusMessage = res['message'];
+      });
+    }
+  }
+
+  Future<void> _saveAndValidateTorbox() async {
+    final key = _torboxKeyController.text.trim();
+    setState(() {
+      _isValidatingTorbox = true;
+      _torboxStatusMessage = 'Validating key with TorBox API...';
+    });
+
+    AddonConfig.instance.torboxApiKey = key;
+    await AddonConfig.instance.save();
+
+    if (key.isEmpty) {
+      setState(() {
+        _isValidatingTorbox = false;
+        _isTorboxValid = false;
+        _torboxStatusMessage = 'TorBox integration disabled (key removed).';
+      });
+      return;
+    }
+
+    final res = await TorboxService.instance.validateAccount(key);
+    if (mounted) {
+      setState(() {
+        _isValidatingTorbox = false;
+        _isTorboxValid = res['valid'] == true;
+        _torboxStatusMessage = res['message'] ?? (res['valid'] == true ? 'Connected' : 'Invalid Key');
+      });
+    }
   }
 
   void _copyToClipboard(String text, String label) {
@@ -120,6 +180,10 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
 
                         // Main Status Card
                         _buildStatusCard(running, ip, port, manifestUrl),
+                        const SizedBox(height: 20),
+
+                        // TorBox Debrid Card
+                        _buildTorboxCard(),
                         const SizedBox(height: 20),
 
                         // Action Buttons (TV Remote Focusable)
@@ -289,6 +353,241 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
             'Paste this URL into Nuvio (Settings -> Addons -> Add Addon) or Stremio.',
             style: TextStyle(fontSize: 13, color: Colors.grey.shade400),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTorboxCard() {
+    final hasKey = _torboxKeyController.text.trim().isNotEmpty;
+    Color statusColor;
+    String statusBadgeText;
+    IconData statusIcon;
+
+    if (!hasKey) {
+      statusColor = const Color(0xFF8B949E);
+      statusBadgeText = 'OPTIONAL';
+      statusIcon = Icons.info_outline_rounded;
+    } else if (_isValidatingTorbox) {
+      statusColor = const Color(0xFF58A6FF);
+      statusBadgeText = 'VALIDATING...';
+      statusIcon = Icons.sync_rounded;
+    } else if (_isTorboxValid) {
+      statusColor = const Color(0xFF3FB950);
+      statusBadgeText = 'CONNECTED';
+      statusIcon = Icons.check_circle_rounded;
+    } else {
+      statusColor = const Color(0xFFF85149);
+      statusBadgeText = 'INVALID KEY';
+      statusIcon = Icons.error_outline_rounded;
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: const Color(0xFF161B22),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: _isTorboxValid ? const Color(0xFF238636) : const Color(0xFF30363D),
+          width: 1.5,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.cloud_sync_rounded, color: Color(0xFF38BDF8), size: 22),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text(
+                  'TorBox Debrid Integration',
+                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Colors.white),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: statusColor.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: statusColor, width: 1),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(statusIcon, color: statusColor, size: 14),
+                    const SizedBox(width: 5),
+                    Text(
+                      statusBadgeText,
+                      style: TextStyle(
+                        color: statusColor,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Enables 1-click cloud streaming and instant caching for HubCloud, PixelDrain, and direct hosters via TorBox CDNs with high-speed byte seeking in Nuvio.',
+            style: TextStyle(fontSize: 13, color: Colors.grey.shade400),
+          ),
+          const SizedBox(height: 16),
+          // API Key Input
+          Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFF0D1117),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFF21262D)),
+            ),
+            child: Row(
+              children: [
+                const SizedBox(width: 12),
+                const Icon(Icons.vpn_key_rounded, color: Color(0xFF818CF8), size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextFormField(
+                    focusNode: _torboxInputFocus,
+                    controller: _torboxKeyController,
+                    obscureText: _obscureTorboxKey,
+                    style: const TextStyle(
+                      fontFamily: 'monospace',
+                      fontSize: 14,
+                      color: Colors.white,
+                    ),
+                    decoration: const InputDecoration(
+                      hintText: 'Enter TorBox API Key (manual input only)',
+                      hintStyle: TextStyle(color: Color(0xFF484F58), fontSize: 13),
+                      border: InputBorder.none,
+                      contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 14),
+                    ),
+                    onFieldSubmitted: (_) => _saveAndValidateTorbox(),
+                  ),
+                ),
+                IconButton(
+                  tooltip: _obscureTorboxKey ? 'Show API Key' : 'Hide API Key',
+                  icon: Icon(
+                    _obscureTorboxKey ? Icons.visibility_off_rounded : Icons.visibility_rounded,
+                    color: Colors.grey.shade400,
+                    size: 20,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _obscureTorboxKey = !_obscureTorboxKey;
+                    });
+                  },
+                ),
+                if (_torboxKeyController.text.isNotEmpty)
+                  IconButton(
+                    tooltip: 'Clear',
+                    icon: const Icon(Icons.clear_rounded, color: Colors.grey, size: 18),
+                    onPressed: () {
+                      _torboxKeyController.clear();
+                      _saveAndValidateTorbox();
+                    },
+                  ),
+                const SizedBox(width: 4),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          // Action Buttons: Save & Validate, Open TorBox Settings
+          Wrap(
+            spacing: 12,
+            runSpacing: 10,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              _TvFocusableButton(
+                focusNode: _torboxSaveFocus,
+                isPrimary: true,
+                primaryColor: const Color(0xFF238636),
+                onPressed: _isValidatingTorbox ? () {} : _saveAndValidateTorbox,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (_isValidatingTorbox)
+                        const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        )
+                      else
+                        const Icon(Icons.save_rounded, size: 18, color: Colors.white),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Save & Validate',
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              _TvFocusableButton(
+                focusNode: _torboxKeyLinkFocus,
+                onPressed: () async {
+                  const url = 'https://torbox.app/settings';
+                  final uri = Uri.parse(url);
+                  if (await canLaunchUrl(uri)) {
+                    await launchUrl(uri, mode: LaunchMode.externalApplication);
+                  } else {
+                    _copyToClipboard(url, 'TorBox Settings URL');
+                  }
+                },
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.launch_rounded, size: 16, color: Color(0xFF38BDF8)),
+                      SizedBox(width: 6),
+                      Text(
+                        'Get Key (torbox.app)',
+                        style: TextStyle(fontSize: 13, color: Color(0xFF38BDF8), fontWeight: FontWeight.w600),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (_torboxStatusMessage != null) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: (_isTorboxValid ? const Color(0xFF238636) : const Color(0xFF21262D)).withOpacity(0.3),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: _isTorboxValid ? const Color(0xFF3FB950).withOpacity(0.4) : const Color(0xFF30363D),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    _isTorboxValid ? Icons.check_circle_outline_rounded : Icons.info_outline_rounded,
+                    color: _isTorboxValid ? const Color(0xFF3FB950) : const Color(0xFF8B949E),
+                    size: 18,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      _torboxStatusMessage!,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: _isTorboxValid ? const Color(0xFF7EE787) : const Color(0xFFC9D1D9),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );
