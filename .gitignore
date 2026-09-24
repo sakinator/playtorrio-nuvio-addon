@@ -6,7 +6,9 @@ data/settings.json
 data/config.json
 *.zip
 *.exe
-upstream/
+/upstream/
+!lib/upstream/
+!android_app/lib/upstream/
 test/test_*.dart
 test/scraper_test.dart
 

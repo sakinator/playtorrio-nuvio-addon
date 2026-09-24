@@ -52,6 +52,8 @@ import 'upstream/services/scraper/sites/zxcstream.dart';
 import 'upstream/services/scraper/sites/vegamovies.dart';
 import 'upstream/services/scraper/sites/hianime.dart';
 import 'upstream/services/scraper/sites/dramacool.dart';
+import 'upstream/services/scraper/sites/bollyflix.dart';
+import 'upstream/services/scraper/sites/gogoanime.dart';
 
 class ScraperRegistry {
   static List<StreamScraper> getAllScrapers() => [
@@ -104,5 +106,7 @@ class ScraperRegistry {
     VegamoviesScraper(),
     HiAnimeScraper(),
     DramacoolScraper(),
+    BollyflixScraper(),
+    GogoanimeScraper(),
   ];
 }
