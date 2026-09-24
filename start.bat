@@ -1,9 +1,9 @@
 @echo off
-title PlayTorrio HTTP Streams Addon for Nuvio
+title sakinator-MegaScraper Addon
 cd /d "%~dp0"
 
 echo ===============================================================
-echo        PlayTorrio HTTP Streams Addon for Nuvio
+echo   sakinator-MegaScraper Addon (56 Cloud Scrapers + TorBox + Badges)
 echo ===============================================================
 echo.
 
@@ -30,8 +30,14 @@ if not exist "lib\upstream" (
 )
 
 :: ── Start server ─────────────────────────────────────────────────────────────
+if exist "sakinator-MegaScraper.exe" (
+    echo Using compiled binary (sakinator-MegaScraper.exe^)...
+    "sakinator-MegaScraper.exe" %*
+    goto end
+)
+
 if exist "playtorrio-addon.exe" (
-    echo Using compiled binary (fastest^)...
+    echo Using compiled binary (playtorrio-addon.exe^)...
     "playtorrio-addon.exe" %*
     goto end
 )

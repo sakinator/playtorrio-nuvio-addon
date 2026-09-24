@@ -1,8 +1,8 @@
-# Pipeline script to update saket Streams Addon
+# Pipeline script to update sakinator-MegaScraper Addon
 Set-Location -Path "$PSScriptRoot\.."
 
 Write-Host "==========================================================" -ForegroundColor Cyan
-Write-Host " 🔄 saket Streams Addon Update & Pull Pipeline" -ForegroundColor Magenta
+Write-Host " 🔄 sakinator-MegaScraper Addon Update & Pull Pipeline" -ForegroundColor Magenta
 Write-Host "==========================================================" -ForegroundColor Cyan
 
 # 1. Locate Dart SDK
@@ -59,12 +59,12 @@ if ($LASTEXITCODE -eq 0) {
 
 # 5. Compile binary
 Write-Host "`n[4/4] Compiling updated standalone server executable..." -ForegroundColor Yellow
-& $dartExe compile exe bin/server.dart -o playtorrio-addon-new.exe
+& $dartExe compile exe bin/server.dart -o sakinator-MegaScraper-new.exe
 if ($LASTEXITCODE -eq 0) {
     # If server is not running or can be replaced
     try {
-        Move-Item -Path "playtorrio-addon-new.exe" -Destination "playtorrio-addon.exe" -Force -ErrorAction Stop
-        Write-Host "  -> Successfully updated playtorrio-addon.exe!" -ForegroundColor Green
+        Move-Item -Path "sakinator-MegaScraper-new.exe" -Destination "sakinator-MegaScraper.exe" -Force -ErrorAction Stop
+        Write-Host "  -> Successfully updated sakinator-MegaScraper.exe!" -ForegroundColor Green
     } catch {
         Write-Host "  -> Server is currently running. Binary will be replaced on next restart." -ForegroundColor Yellow
     }

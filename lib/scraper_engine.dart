@@ -6,6 +6,7 @@ import 'metadata_service.dart';
 import 'upstream/models/stream/stream_model.dart';
 import 'upstream/services/scraper/stream_scraper.dart';
 import 'badge_service.dart';
+import 'torbox_service.dart';
 
 class ScrapedStream {
   final String name;
@@ -141,12 +142,23 @@ class ScraperEngine {
       final headers = src.headers ?? {};
 
       // ── URL & proxy decision ───────────────────────────────────────────
-      // If the stream requires custom headers (Referer / Origin / etc.) and
-      // proxy is enabled, route through our local proxy so any player can play
-      // it without needing to set headers itself.
+      // ── Torbox Caching & Debrid Integration ───────────────────────────
+      final torboxKey = cfg.torboxApiKey.trim();
+      bool isTorboxCached = false;
+      if (torboxKey.isNotEmpty && TorboxService.instance.isSupportedHoster(rawUrl)) {
+        try {
+          isTorboxCached = await TorboxService.instance.checkCached(rawUrl, torboxKey);
+        } catch (_) {}
+      }
+
+      // ── URL & proxy / Torbox decision ───────────────────────────────────
       String streamUrl = rawUrl;
       bool isProxied = false;
-      if (cfg.enableProxyForHeaders && headers.isNotEmpty) {
+
+      if (isTorboxCached && torboxKey.isNotEmpty) {
+        // Route through local Torbox streaming resolver
+        streamUrl = '$localBaseUrl/torbox/play?url=${Uri.encodeComponent(rawUrl)}';
+      } else if (cfg.enableProxyForHeaders && headers.isNotEmpty) {
         final headersJson = jsonEncode(headers);
         streamUrl = '$localBaseUrl/proxy?url=${Uri.encodeComponent(rawUrl)}'
             '&headers=${Uri.encodeComponent(headersJson)}';
@@ -154,68 +166,35 @@ class ScraperEngine {
       }
 
       // ── behaviorHints ─────────────────────────────────────────────────
-      // notWebReady: true  → stream can't be played directly in a browser tab
-      //                       (most HLS streams with auth/referer headers)
-      // notWebReady: false → browser can play it (proxy handles headers, or
-      //                       no headers needed at all)
       final behaviorHints = <String, dynamic>{
-        'notWebReady': !isProxied && headers.isNotEmpty,
+        'notWebReady': !isProxied && !isTorboxCached && headers.isNotEmpty,
       };
 
-      // Also advertise proxyHeaders so Nuvio native clients (Android/iOS) can
-      // attach them directly without going through our proxy.
-      if (headers.isNotEmpty && !isProxied) {
+      if (headers.isNotEmpty && !isProxied && !isTorboxCached) {
         behaviorHints['proxyHeaders'] = {'request': headers};
       }
 
-      // ── Display strings (No mention of saket, standard scene filename & badges) ──
-      final titleLines = <String>[];
-      final originalTitle = (src.title ?? '').trim();
-
-      // 1. Generate standard scene filename (so Nuvio's regex-based badges trigger)
-      final sceneFilename = BadgeService.formatSceneFilename(
-        title: meta.title,
+      // ── Enrich Stream Links Using BadgeService JSON Filters ───────────
+      final rawTitle = src.title ?? src.name ?? meta.title;
+      final enriched = BadgeService.enrichStream(
+        rawTitle: rawTitle,
+        mediaTitle: meta.title,
         year: meta.year,
         season: meta.season,
         episode: meta.episode,
         quality: q,
         codec: src.codec,
-        audio: badge.isNotEmpty ? badge : null,
-        originalFilename: (originalTitle.contains('.') && !originalTitle.contains('Direct Cloud') && !originalTitle.contains('\n'))
-            ? originalTitle
-            : null,
+        audioBadge: badge,
+        fileSize: src.fileSize,
+        providerName: providerName,
+        isCached: isTorboxCached,
+        isHls: isHls,
+        isProxied: isProxied,
       );
-      titleLines.add(sceneFilename);
-
-      // 2. Extract badges & technical details
-      final matchedBadges = BadgeService.getBadges('$sceneFilename $originalTitle $q $badge ${src.codec ?? ""}');
-      final badgeStr = matchedBadges.isNotEmpty
-          ? matchedBadges.map((b) => '[$b]').join(' ')
-          : (q.isNotEmpty ? '[$q]' : '');
-
-      final details = <String>[];
-      if (badgeStr.isNotEmpty) details.add(badgeStr);
-      if (src.fileSize != null && src.fileSize!.isNotEmpty) details.add('💾 ${src.fileSize}');
-      if (isHls) {
-        details.add('⚡ HLS');
-      } else {
-        details.add('⚡ Direct');
-      }
-      if (isProxied) details.add('🔀 Proxied');
-
-      if (details.isNotEmpty) titleLines.add(details.join(' • '));
-
-      // 3. Provider / Source Name (Never mentions saket)
-      titleLines.add('🌐 Source: $providerName');
-
-      final displayTitle = titleLines.join('\n');
-      final displayName = q.isNotEmpty
-          ? '$providerName\n$q'
-          : providerName;
 
       finalStreams.add(ScrapedStream(
-        name: displayName,
-        title: displayTitle,
+        name: enriched['name']!,
+        title: enriched['title']!,
         url: streamUrl,
         behaviorHints: behaviorHints,
         provider: providerName,

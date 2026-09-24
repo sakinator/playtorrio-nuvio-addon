@@ -19,7 +19,7 @@ class PlayTorrioAddonApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'PlayTorrio Addon',
+      title: 'sakinator-MegaScraper',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         brightness: Brightness.dark,
@@ -165,7 +165,7 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'PlayTorrio HTTP Streams',
+                'sakinator-MegaScraper',
                 style: TextStyle(
                   fontSize: 26,
                   fontWeight: FontWeight.w900,

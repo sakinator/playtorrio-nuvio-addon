@@ -6,6 +6,7 @@ import 'package:playtorrio_nuvio_addon/proxy.dart';
 import 'package:playtorrio_nuvio_addon/scraper_engine.dart';
 import 'package:playtorrio_nuvio_addon/web_ui.dart';
 import 'package:playtorrio_nuvio_addon/catalog_service.dart';
+import 'package:playtorrio_nuvio_addon/torbox_service.dart';
 
 void main(List<String> args) async {
   // ── CWD fix ──────────────────────────────────────────────────────────────
@@ -31,7 +32,7 @@ void main(List<String> args) async {
   final server = await HttpServer.bind(InternetAddress.anyIPv4, cfg.port);
 
   print('===============================================================');
-  print('             ⚡ saket Streams Addon for Nuvio ⚡              ');
+  print('          ⚡ sakinator-MegaScraper Addon for Nuvio ⚡         ');
   print('===============================================================');
   print(' Status: RUNNING');
   print(' Port:   ${cfg.port}');
@@ -86,10 +87,10 @@ Future<void> _handleRequest(HttpRequest request, String lanIp, int port) async {
     // ── 2. Stremio/Nuvio Addon Manifest ───────────────────────────────────
     if (path == '/manifest.json') {
       final manifest = {
-        'id': 'org.saket.streams',
-        'version': '1.4.0',
-        'name': 'saket',
-        'description': '56 Direct Cloud Scrapers + YouTube, Archive.org & Dailymotion Indian & Global Catalogs (100% Non-Torrent)',
+        'id': 'org.sakinator.megascraper',
+        'version': '1.5.0',
+        'name': 'sakinator-MegaScraper',
+        'description': '56 Direct Cloud Scrapers + Torbox Debrid + YouTube, Archive.org & Dailymotion Catalogs (100% Non-Torrent)',
         'resources': ['catalog', 'meta', 'stream'],
         'types': ['movie', 'series'],
         'idPrefixes': ['tt', 'tmdb', 'kitsu', 'yt:', 'archive:', 'dm:'],
@@ -221,6 +222,26 @@ Future<void> _handleRequest(HttpRequest request, String lanIp, int port) async {
       return;
     }
 
+    // ── 4b. Torbox Debrid Play Endpoint: /torbox/play?url=... ──────────────
+    if (path == '/torbox/play') {
+      final targetUrl = request.uri.queryParameters['url'];
+      if (targetUrl == null || targetUrl.isEmpty) {
+        request.response.statusCode = HttpStatus.badRequest;
+        request.response.write('Missing url parameter');
+        await request.response.close();
+        return;
+      }
+      final apiKey = AddonConfig.instance.torboxApiKey.trim();
+      final debridedUrl = await TorboxService.instance.debridLink(targetUrl, apiKey);
+      if (debridedUrl != null && debridedUrl.isNotEmpty) {
+        request.response.redirect(Uri.parse(debridedUrl), status: HttpStatus.found);
+        return;
+      }
+      // Fallback: redirect to original URL
+      request.response.redirect(Uri.parse(targetUrl), status: HttpStatus.found);
+      return;
+    }
+
     // ── 5. API: Toggle provider: POST /api/provider/:id ───────────────────
     if (path.startsWith('/api/provider/') && method == 'POST') {
       final providerId = path.replaceFirst('/api/provider/', '');
@@ -231,6 +252,43 @@ Future<void> _handleRequest(HttpRequest request, String lanIp, int port) async {
       AddonConfig.instance.toggleProvider(providerId, enabled);
       request.response.headers.contentType = ContentType.json;
       request.response.write(jsonEncode({'success': true, 'id': providerId, 'enabled': enabled}));
+      await request.response.close();
+      return;
+    }
+
+    // ── 5b. API: Configure Torbox: POST /api/torbox/config ────────────────
+    if (path == '/api/torbox/config' && method == 'POST') {
+      final bodyStr = await utf8.decodeStream(request);
+      final bodyJson = jsonDecode(bodyStr) as Map;
+      final apiKey = bodyJson['apiKey']?.toString().trim() ?? '';
+      AddonConfig.instance.torboxApiKey = apiKey;
+      await AddonConfig.instance.save();
+      final account = await TorboxService.instance.validateAccount(apiKey);
+      request.response.headers.contentType = ContentType.json;
+      request.response.write(jsonEncode({'success': true, 'account': account}));
+      await request.response.close();
+      return;
+    }
+
+    // ── 5c. API: Live Torbox Hosters: GET /api/torbox/hosters ─────────────
+    if (path == '/api/torbox/hosters') {
+      final apiKey = AddonConfig.instance.torboxApiKey.trim();
+      final hosters = await TorboxService.instance.getHosters(apiKey: apiKey.isNotEmpty ? apiKey : null);
+      request.response.headers.contentType = ContentType.json;
+      request.response.write(jsonEncode({'success': true, 'hosters': hosters}));
+      await request.response.close();
+      return;
+    }
+
+    // ── 5d. API: Upload / Cache Link to Torbox: POST /api/torbox/upload ───
+    if (path == '/api/torbox/upload' && method == 'POST') {
+      final bodyStr = await utf8.decodeStream(request);
+      final bodyJson = jsonDecode(bodyStr) as Map;
+      final url = bodyJson['url']?.toString().trim() ?? '';
+      final apiKey = AddonConfig.instance.torboxApiKey.trim();
+      final uploadRes = await TorboxService.instance.uploadToTorbox(url, apiKey);
+      request.response.headers.contentType = ContentType.json;
+      request.response.write(jsonEncode(uploadRes));
       await request.response.close();
       return;
     }

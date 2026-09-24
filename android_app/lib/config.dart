@@ -1,53 +1,78 @@
-import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
+import 'dart:io';
 
 class AddonConfig {
   static final AddonConfig instance = AddonConfig._();
 
-  int port = 7002;
+  int port = 7000;
   String host = '0.0.0.0';
   int timeoutSeconds = 9;
   bool enableProxyForHeaders = true;
   Set<String> disabledProviders = {};
   List<String> providerOrder = [];
   bool autoCheckUpdates = true;
+
+  /// TMDB API key used by metadata_service.dart.
+  /// Override in data/config.json with your own key if the default is rate-limited.
   String tmdbApiKey = 'b3556f3b206e16f82df4d1f6fd4545e6';
+  String torboxApiKey = '';
+
+  static final File _configFile = File('data/config.json');
 
   AddonConfig._();
 
   Future<void> load() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      port = prefs.getInt('server_port') ?? 7002;
-      timeoutSeconds = prefs.getInt('timeout_seconds') ?? 9;
-      enableProxyForHeaders = prefs.getBool('enable_proxy_headers') ?? true;
-      final disabled = prefs.getStringList('disabled_providers');
-      if (disabled != null) {
-        disabledProviders = disabled.map((e) => e.toLowerCase()).toSet();
-      }
-      final order = prefs.getStringList('provider_order');
-      if (order != null) {
-        providerOrder = order.map((e) => e.toLowerCase()).toList();
-      }
-      final key = prefs.getString('tmdb_api_key');
-      if (key != null && key.isNotEmpty) {
-        tmdbApiKey = key;
+      if (await _configFile.exists()) {
+        final content = await _configFile.readAsString();
+        final map = jsonDecode(content) as Map<String, dynamic>;
+        port = map['port'] is int ? map['port'] : port;
+        host = map['host']?.toString() ?? host;
+        timeoutSeconds = map['timeoutSeconds'] is int ? map['timeoutSeconds'] : timeoutSeconds;
+        enableProxyForHeaders = map['enableProxyForHeaders'] is bool
+            ? map['enableProxyForHeaders']
+            : enableProxyForHeaders;
+        if (map['disabledProviders'] is List) {
+          disabledProviders =
+              (map['disabledProviders'] as List).map((e) => e.toString().toLowerCase()).toSet();
+        }
+        if (map['providerOrder'] is List) {
+          providerOrder =
+              (map['providerOrder'] as List).map((e) => e.toString().toLowerCase()).toList();
+        }
+        autoCheckUpdates =
+            map['autoCheckUpdates'] is bool ? map['autoCheckUpdates'] : autoCheckUpdates;
+        if (map['tmdbApiKey'] is String && (map['tmdbApiKey'] as String).isNotEmpty) {
+          tmdbApiKey = map['tmdbApiKey'];
+        }
+        if (map['torboxApiKey'] is String) {
+          torboxApiKey = map['torboxApiKey'];
+        }
       }
     } catch (e) {
-      // ignore
+      print('[AddonConfig] Error loading config: $e');
     }
   }
 
   Future<void> save() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setInt('server_port', port);
-      await prefs.setInt('timeout_seconds', timeoutSeconds);
-      await prefs.setBool('enable_proxy_headers', enableProxyForHeaders);
-      await prefs.setStringList('disabled_providers', disabledProviders.toList());
-      await prefs.setStringList('provider_order', providerOrder);
-      await prefs.setString('tmdb_api_key', tmdbApiKey);
+      if (!await _configFile.parent.exists()) {
+        await _configFile.parent.create(recursive: true);
+      }
+      final data = {
+        'port': port,
+        'host': host,
+        'timeoutSeconds': timeoutSeconds,
+        'enableProxyForHeaders': enableProxyForHeaders,
+        'disabledProviders': disabledProviders.toList(),
+        'providerOrder': providerOrder,
+        'autoCheckUpdates': autoCheckUpdates,
+        'tmdbApiKey': tmdbApiKey,
+        'torboxApiKey': torboxApiKey,
+      };
+      await _configFile.writeAsString(const JsonEncoder.withIndent('  ').convert(data));
     } catch (e) {
-      // ignore
+      print('[AddonConfig] Error saving config: $e');
     }
   }
 
@@ -62,6 +87,6 @@ class AddonConfig {
     } else {
       disabledProviders.add(id);
     }
-    save();
+    save(); // fire-and-forget – non-blocking
   }
 }

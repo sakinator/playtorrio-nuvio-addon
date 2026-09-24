@@ -9,6 +9,7 @@ import 'proxy.dart';
 import 'scraper_engine.dart';
 import 'web_ui.dart';
 import 'catalog_service.dart';
+import 'torbox_service.dart';
 
 class ServerService {
   static final ServerService instance = ServerService._();
@@ -198,10 +199,10 @@ class ServerService {
       // 2. Stremio/Nuvio Addon Manifest
       if (path == '/manifest.json') {
         final manifest = {
-          'id': 'org.saket.streams',
-          'version': '1.4.0',
-          'name': 'saket',
-          'description': '56 Direct Cloud Scrapers + YouTube, Archive.org & Dailymotion Indian & Global Catalogs (100% Non-Torrent)',
+          'id': 'org.sakinator.megascraper',
+          'version': '1.5.0',
+          'name': 'sakinator-MegaScraper',
+          'description': '56 Direct Cloud Scrapers + Torbox Debrid + YouTube, Archive.org & Dailymotion Catalogs (100% Non-Torrent)',
           'resources': ['catalog', 'meta', 'stream'],
           'types': ['movie', 'series'],
           'idPrefixes': ['tt', 'tmdb', 'kitsu', 'yt:', 'archive:', 'dm:'],
@@ -329,6 +330,25 @@ class ServerService {
         return;
       }
 
+      // 4b. Torbox Debrid Play Endpoint: /torbox/play?url=...
+      if (path == '/torbox/play') {
+        final targetUrl = request.uri.queryParameters['url'];
+        if (targetUrl == null || targetUrl.isEmpty) {
+          request.response.statusCode = HttpStatus.badRequest;
+          request.response.write('Missing url parameter');
+          await request.response.close();
+          return;
+        }
+        final apiKey = AddonConfig.instance.torboxApiKey.trim();
+        final debridedUrl = await TorboxService.instance.debridLink(targetUrl, apiKey);
+        if (debridedUrl != null && debridedUrl.isNotEmpty) {
+          request.response.redirect(Uri.parse(debridedUrl), status: HttpStatus.found);
+          return;
+        }
+        request.response.redirect(Uri.parse(targetUrl), status: HttpStatus.found);
+        return;
+      }
+
       // 5. Provider toggle: POST /api/provider/:id
       if (path.startsWith('/api/provider/') && method == 'POST') {
         final providerId = path.replaceFirst('/api/provider/', '');
@@ -343,10 +363,55 @@ class ServerService {
         return;
       }
 
+      // 5b. API: Configure Torbox: POST /api/torbox/config
+      if (path == '/api/torbox/config' && method == 'POST') {
+        final bodyStr = await utf8.decodeStream(request);
+        final bodyJson = jsonDecode(bodyStr) as Map;
+        final apiKey = bodyJson['apiKey']?.toString().trim() ?? '';
+        AddonConfig.instance.torboxApiKey = apiKey;
+        await AddonConfig.instance.save();
+        final account = await TorboxService.instance.validateAccount(apiKey);
+        request.response.headers.contentType = ContentType.json;
+        request.response.write(jsonEncode({'success': true, 'account': account}));
+        await request.response.close();
+        return;
+      }
+
+      // 5c. API: Live Torbox Hosters: GET /api/torbox/hosters
+      if (path == '/api/torbox/hosters') {
+        final apiKey = AddonConfig.instance.torboxApiKey.trim();
+        final hosters = await TorboxService.instance.getHosters(apiKey: apiKey.isNotEmpty ? apiKey : null);
+        request.response.headers.contentType = ContentType.json;
+        request.response.write(jsonEncode({'success': true, 'hosters': hosters}));
+        await request.response.close();
+        return;
+      }
+
+      // 5d. API: Upload / Cache Link to Torbox: POST /api/torbox/upload
+      if (path == '/api/torbox/upload' && method == 'POST') {
+        final bodyStr = await utf8.decodeStream(request);
+        final bodyJson = jsonDecode(bodyStr) as Map;
+        final url = bodyJson['url']?.toString().trim() ?? '';
+        final apiKey = AddonConfig.instance.torboxApiKey.trim();
+        final uploadRes = await TorboxService.instance.uploadToTorbox(url, apiKey);
+        request.response.headers.contentType = ContentType.json;
+        request.response.write(jsonEncode(uploadRes));
+        await request.response.close();
+        return;
+      }
+
       // 6. Health
       if (path == '/health') {
         request.response.headers.contentType = ContentType.json;
         request.response.write(jsonEncode({'status': 'ok', 'port': port}));
+        await request.response.close();
+        return;
+      }
+
+      // 7. Badges JSON
+      if (path == '/badges.json') {
+        request.response.headers.contentType = ContentType.json;
+        request.response.write(jsonEncode({'status': 'ok', 'badges': 'configured'}));
         await request.response.close();
         return;
       }

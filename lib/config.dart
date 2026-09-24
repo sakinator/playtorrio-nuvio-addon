@@ -15,6 +15,7 @@ class AddonConfig {
   /// TMDB API key used by metadata_service.dart.
   /// Override in data/config.json with your own key if the default is rate-limited.
   String tmdbApiKey = 'b3556f3b206e16f82df4d1f6fd4545e6';
+  String torboxApiKey = '';
 
   static final File _configFile = File('data/config.json');
 
@@ -44,6 +45,9 @@ class AddonConfig {
         if (map['tmdbApiKey'] is String && (map['tmdbApiKey'] as String).isNotEmpty) {
           tmdbApiKey = map['tmdbApiKey'];
         }
+        if (map['torboxApiKey'] is String) {
+          torboxApiKey = map['torboxApiKey'];
+        }
       }
     } catch (e) {
       print('[AddonConfig] Error loading config: $e');
@@ -64,6 +68,7 @@ class AddonConfig {
         'providerOrder': providerOrder,
         'autoCheckUpdates': autoCheckUpdates,
         'tmdbApiKey': tmdbApiKey,
+        'torboxApiKey': torboxApiKey,
       };
       await _configFile.writeAsString(const JsonEncoder.withIndent('  ').convert(data));
     } catch (e) {
