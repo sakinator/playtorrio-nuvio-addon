@@ -49,6 +49,30 @@ class AddonConfig {
           torboxApiKey = map['torboxApiKey'];
         }
       }
+
+      // If TorBox API key is not yet configured, attempt auto-detection from Nuvio desktop settings
+      if (torboxApiKey.isEmpty && Platform.isWindows) {
+        try {
+          final appData = Platform.environment['APPDATA'] ?? '';
+          if (appData.isNotEmpty) {
+            final nuvioDebrid = File('$appData\\Nuvio\\nuvio_debrid_settings.properties');
+            if (await nuvioDebrid.exists()) {
+              final lines = await nuvioDebrid.readAsLines();
+              for (final line in lines) {
+                final trimmed = line.trim();
+                if (trimmed.startsWith('debrid_torbox_api_key_1=')) {
+                  final key = trimmed.substring('debrid_torbox_api_key_1='.length).trim();
+                  if (key.isNotEmpty) {
+                    torboxApiKey = key;
+                    print('[AddonConfig] Auto-detected Torbox API key from Nuvio debrid settings.');
+                    break;
+                  }
+                }
+              }
+            }
+          }
+        } catch (_) {}
+      }
     } catch (e) {
       print('[AddonConfig] Error loading config: $e');
     }

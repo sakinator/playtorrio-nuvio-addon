@@ -17,6 +17,22 @@ class TorboxService {
   static DateTime? _hostersExpiry;
   static final Map<String, bool> _cacheLookup = {};
 
+  static const _defaultUserAgent =
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
+
+  Map<String, String> _headers(String? apiKey, {bool isJson = false}) {
+    final h = <String, String>{
+      'User-Agent': _defaultUserAgent,
+    };
+    if (apiKey != null && apiKey.isNotEmpty) {
+      h['Authorization'] = 'Bearer $apiKey';
+    }
+    if (isJson) {
+      h['Content-Type'] = 'application/json';
+    }
+    return h;
+  }
+
   /// Checks if an API key is valid and returns user plan information
   Future<Map<String, dynamic>> validateAccount(String apiKey) async {
     if (apiKey.isEmpty) {
@@ -25,7 +41,7 @@ class TorboxService {
     try {
       final res = await http.get(
         Uri.parse('$_apiBase/user/me'),
-        headers: {'Authorization': 'Bearer $apiKey'},
+        headers: _headers(apiKey),
       ).timeout(const Duration(seconds: 5));
 
       if (res.statusCode == 200) {
@@ -56,13 +72,9 @@ class TorboxService {
     }
 
     try {
-      final headers = <String, String>{};
-      if (apiKey != null && apiKey.isNotEmpty) {
-        headers['Authorization'] = 'Bearer $apiKey';
-      }
       final res = await http.get(
         Uri.parse('$_apiBase/webdl/hosters'),
-        headers: headers,
+        headers: _headers(apiKey),
       ).timeout(const Duration(seconds: 5));
 
       if (res.statusCode == 200) {
@@ -85,8 +97,8 @@ class TorboxService {
   /// Checks if a direct link or web hoster link is cached on Torbox servers
   Future<bool> checkCached(String url, String apiKey) async {
     if (apiKey.isEmpty) return false;
-    final hash = md5.convert(utf8.encode(url.trim())).toString();
 
+    final hash = md5.convert(utf8.encode(url.trim())).toString();
     if (_cacheLookup.containsKey(hash)) {
       return _cacheLookup[hash]!;
     }
@@ -95,7 +107,7 @@ class TorboxService {
       final uri = Uri.parse('$_apiBase/webdl/checkcached?hash=$hash&format=object');
       final res = await http.get(
         uri,
-        headers: {'Authorization': 'Bearer $apiKey'},
+        headers: _headers(apiKey),
       ).timeout(const Duration(seconds: 3));
 
       if (res.statusCode == 200) {
@@ -122,14 +134,10 @@ class TorboxService {
       final createUrl = Uri.parse('$_apiBase/webdl/createwebdownload');
       final res = await http.post(
         createUrl,
-        headers: {
-          'Authorization': 'Bearer $apiKey',
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({
+        headers: _headers(apiKey, isJson: false),
+        body: {
           'link': url.trim(),
-          'client': 'MegaScraper',
-        }),
+        },
       ).timeout(const Duration(seconds: 8));
 
       final data = jsonDecode(res.body);
@@ -161,6 +169,7 @@ class TorboxService {
           // Request direct streaming link
           final dlRes = await http.get(
             Uri.parse('$_apiBase/webdl/requestdl?token=$apiKey&web_id=$webId'),
+            headers: _headers(apiKey),
           ).timeout(const Duration(seconds: 5));
 
           if (dlRes.statusCode == 200) {
@@ -177,23 +186,50 @@ class TorboxService {
 
   /// Returns true if the hoster is supported by TorBox
   bool isSupportedHoster(String url) {
+    final clean = url.split('?').first.toLowerCase();
+    if (clean.endsWith('.mp4') ||
+        clean.endsWith('.mkv') ||
+        clean.endsWith('.avi') ||
+        clean.endsWith('.webm') ||
+        clean.endsWith('.ts')) {
+      return true;
+    }
+
     final lower = url.toLowerCase();
-    // Check known domains (HubCloud, HubDrive, Pixeldrain, Mega, 1fichier, etc.)
-    return lower.contains('pixeldrain.com') ||
-        lower.contains('1fichier.com') ||
-        lower.contains('rapidgator.net') ||
+    // Known hosters / mirrors supported by TorBox
+    if (lower.contains('pixeldrain') ||
+        lower.contains('1fichier') ||
+        lower.contains('rapidgator') ||
         lower.contains('mega.nz') ||
-        lower.contains('mediafire.com') ||
-        lower.contains('ddownload.com') ||
-        lower.contains('uptobox.com') ||
+        lower.contains('mediafire') ||
+        lower.contains('ddownload') ||
+        lower.contains('uptobox') ||
         lower.contains('drive.google.com') ||
+        lower.contains('googleusercontent.com') ||
         lower.contains('hubcloud') ||
         lower.contains('hubdrive') ||
         lower.contains('driveseed') ||
         lower.contains('fastdl') ||
         lower.contains('vcloud') ||
-        lower.endsWith('.mp4') ||
-        lower.endsWith('.mkv') ||
-        lower.endsWith('.avi');
+        lower.contains('fileq') ||
+        lower.contains('workers.dev')) {
+      return true;
+    }
+
+    // Check dynamically cached hoster domains
+    if (_cachedHosters != null) {
+      for (final h in _cachedHosters!) {
+        final domains = h['domains'];
+        if (domains is List) {
+          for (final d in domains) {
+            if (lower.contains(d.toString().toLowerCase())) {
+              return true;
+            }
+          }
+        }
+      }
+    }
+
+    return false;
   }
 }
