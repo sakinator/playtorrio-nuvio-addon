@@ -4,6 +4,7 @@ import 'dart:io';
 class StreamProxy {
   static final HttpClient _client = HttpClient()
     ..badCertificateCallback = ((X509Certificate cert, String host, int port) => true)
+    ..userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
     ..connectionTimeout = const Duration(seconds: 15);
 
   /// Handles incoming /proxy HTTP requests.

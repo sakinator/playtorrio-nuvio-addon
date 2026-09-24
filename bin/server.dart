@@ -67,13 +67,9 @@ Future<void> _handleRequest(HttpRequest request, String lanIp, int port) async {
     return;
   }
 
-  // Use the incoming Host header if present (e.g. localhost:7002 from this PC,
-  // or 192.168.0.127:7002 from TV on LAN), ensuring proxy URLs are always
-  // directly reachable by whoever made the request.
-  final hostHeader = request.headers.host;
-  final localBaseUrl = (hostHeader != null && hostHeader.isNotEmpty)
-      ? 'http://$hostHeader'
-      : 'http://$lanIp:$port';
+  // Use the exact scheme and authority (host:port) that the client connected to
+  // (e.g. localhost:7002 from PC, or 192.168.0.127:7002 from TV on LAN).
+  final localBaseUrl = '${request.requestedUri.scheme}://${request.requestedUri.authority}';
 
   try {
     // ── 1. Root / Configure Web UI ────────────────────────────────────────

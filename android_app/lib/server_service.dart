@@ -181,11 +181,8 @@ class ServerService {
       return;
     }
 
-    final lan = localIp.value;
-    final hostHeader = request.headers.host;
-    final localBaseUrl = (hostHeader != null && hostHeader.isNotEmpty)
-        ? 'http://$hostHeader'
-        : 'http://$lan:$port';
+    // Use the exact scheme and authority (host:port) that the client connected to
+    final localBaseUrl = '${request.requestedUri.scheme}://${request.requestedUri.authority}';
 
     try {
       // 1. Web dashboard
