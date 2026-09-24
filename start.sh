@@ -15,7 +15,7 @@ PORT="${1:-7000}"
 
 echo ""
 echo "==============================================================="
-echo "    ⚡ PlayTorrio HTTP Streams Addon for Nuvio ⚡"
+echo "    ⚡ sakinator-MegaScraper Addon for Nuvio ⚡"
 echo "==============================================================="
 
 # ── 1. Find Dart ─────────────────────────────────────────────────────────────
@@ -51,7 +51,7 @@ echo "==============================================================="
 echo ""
 
 # ── 4. Start the server ───────────────────────────────────────────────────────
-COMPILED_BIN="./playtorrio-addon"
+COMPILED_BIN="./sakinator-MegaScraper"
 
 if [ -f "$COMPILED_BIN" ] && [ -x "$COMPILED_BIN" ]; then
     echo " Using compiled binary (fastest startup)..."

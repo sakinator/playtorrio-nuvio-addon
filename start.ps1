@@ -1,8 +1,8 @@
-# PowerShell launcher for PlayTorrio HTTP Streams Addon (Windows)
+# PowerShell launcher for sakinator-MegaScraper Addon (Windows)
 Set-Location -Path $PSScriptRoot
 
 Write-Host "===============================================================" -ForegroundColor Cyan
-Write-Host "       ⚡ PlayTorrio HTTP Streams Addon for Nuvio ⚡" -ForegroundColor Magenta
+Write-Host "       ⚡ sakinator-MegaScraper Addon for Nuvio ⚡" -ForegroundColor Magenta
 Write-Host "===============================================================" -ForegroundColor Cyan
 Write-Host ""
 
@@ -23,9 +23,9 @@ if (-not (Test-Path "lib\upstream") -and $dartExe) {
 }
 
 # ── Start server ──────────────────────────────────────────────────────────────
-if (Test-Path "playtorrio-addon.exe") {
-    Write-Host " Using compiled binary (fastest startup)..." -ForegroundColor Green
-    & ".\playtorrio-addon.exe" @args
+if (Test-Path "sakinator-MegaScraper.exe") {
+    Write-Host " Using compiled binary (sakinator-MegaScraper.exe)..." -ForegroundColor Green
+    & ".\sakinator-MegaScraper.exe" @args
 }
 elseif ($dartExe) {
     Write-Host " Using dart run: $dartExe" -ForegroundColor Green
