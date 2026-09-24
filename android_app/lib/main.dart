@@ -10,11 +10,11 @@ void main() async {
   await ServerService.instance.init();
   // Auto-start server on app launch
   await ServerService.instance.startServer();
-  runApp(const PlayTorrioAddonApp());
+  runApp(const MegaScraperAddonApp());
 }
 
-class PlayTorrioAddonApp extends StatelessWidget {
-  const PlayTorrioAddonApp({super.key});
+class MegaScraperAddonApp extends StatelessWidget {
+  const MegaScraperAddonApp({super.key});
 
   @override
   Widget build(BuildContext context) {

@@ -61,13 +61,19 @@ class StreamProxy {
 
       request.response.statusCode = res.statusCode;
 
-      // Copy response headers
+      final contentType = res.headers.contentType?.mimeType.toLowerCase() ?? '';
+      final isHls = contentType.contains('mpegurl') || targetUrl.contains('.m3u8');
+
+      // Copy response headers, excluding hop-by-hop and encoding headers for rewritten content
       res.headers.forEach((name, values) {
         final lower = name.toLowerCase();
-        if (lower != 'connection' && lower != 'transfer-encoding') {
-          for (final val in values) {
-            request.response.headers.add(name, val);
-          }
+        if (lower == 'connection' || lower == 'transfer-encoding') return;
+        if (isHls && (lower == 'content-encoding' || lower == 'content-length')) {
+          // Decompressed plaintext body is rewritten; do not copy original gzip encoding/length
+          return;
+        }
+        for (final val in values) {
+          request.response.headers.add(name, val);
         }
       });
 
@@ -75,9 +81,6 @@ class StreamProxy {
       request.response.headers.set('Access-Control-Allow-Origin', '*');
       request.response.headers.set('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
       request.response.headers.set('Access-Control-Allow-Headers', '*');
-
-      final contentType = res.headers.contentType?.mimeType.toLowerCase() ?? '';
-      final isHls = contentType.contains('mpegurl') || targetUrl.contains('.m3u8');
 
       if (isHls && res.statusCode == HttpStatus.ok) {
         // Rewrite HLS playlist relative URLs
@@ -89,19 +92,24 @@ class StreamProxy {
           proxyBaseUrl: '${request.requestedUri.scheme}://${request.requestedUri.host}:${request.requestedUri.port}/proxy',
           customHeadersJson: query['headers'] ?? '',
         );
-        request.response.headers.contentLength = utf8.encode(rewritten).length;
-        request.response.write(rewritten);
+        final encoded = utf8.encode(rewritten);
+        request.response.headers.contentType = ContentType('application', 'vnd.apple.mpegurl', charset: 'utf-8');
+        request.response.headers.contentLength = encoded.length;
+        request.response.add(encoded);
         await request.response.close();
       } else {
         await request.response.addStream(res);
         await request.response.close();
       }
     } catch (e) {
-      if (!request.response.headers.chunkedTransferEncoding) {
-        request.response
-          ..statusCode = HttpStatus.badGateway
-          ..write('Proxy error: $e')
-          ..close();
+      try {
+        request.response.statusCode = HttpStatus.badGateway;
+        request.response.write('Proxy error: $e');
+        await request.response.close();
+      } catch (_) {
+        try {
+          await request.response.close();
+        } catch (_) {}
       }
     }
   }

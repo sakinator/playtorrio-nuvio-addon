@@ -42,9 +42,9 @@ class ServerService {
   void _initForegroundTask() {
     FlutterForegroundTask.init(
       androidNotificationOptions: AndroidNotificationOptions(
-        channelId: 'playtorrio_server_channel',
-        channelName: 'PlayTorrio Server Service',
-        channelDescription: 'Keeps PlayTorrio Addon HTTP Server active for Nuvio.',
+        channelId: 'megascraper_server_channel',
+        channelName: 'MegaScraper Server Service',
+        channelDescription: 'Keeps MegaScraper Addon HTTP Server active for Nuvio.',
         channelImportance: NotificationChannelImportance.LOW,
         priority: NotificationPriority.LOW,
         iconData: const NotificationIconData(
@@ -122,7 +122,7 @@ class ServerService {
       try {
         if (!await FlutterForegroundTask.isRunningService) {
           await FlutterForegroundTask.startService(
-            notificationTitle: 'PlayTorrio Server Active',
+            notificationTitle: 'MegaScraper Server Active',
             notificationText: 'Serving Nuvio streams on port ${cfg.port}',
           );
         }

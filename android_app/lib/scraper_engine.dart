@@ -135,7 +135,11 @@ class ScraperEngine {
       if (seenUrls.contains(rawUrl)) continue;
       seenUrls.add(rawUrl);
 
-      final providerName = src.providerName ?? src.name ?? 'PlayTorrio';
+      String providerName = src.providerName ?? src.name ?? 'MegaScraper';
+      if (providerName.toLowerCase().contains('playtorrio')) {
+        providerName = providerName.replaceAll(RegExp(r'PlayTorrio(HTTP)?', caseSensitive: false), 'MegaScraper').trim();
+        if (providerName.isEmpty) providerName = 'MegaScraper';
+      }
       final q = src.quality ?? '';
       final isHls = rawUrl.contains('.m3u8');
       final badge = src.getAudioBadge(mediaTitle: meta.title) ?? '';
@@ -175,7 +179,11 @@ class ScraperEngine {
       }
 
       // ── Enrich Stream Links Using BadgeService JSON Filters ───────────
-      final rawTitle = src.title ?? src.name ?? meta.title;
+      String rawTitle = src.title ?? src.name ?? meta.title;
+      rawTitle = rawTitle
+          .replaceAll(RegExp(r'PlayTorrio(HTTP)?', caseSensitive: false), 'MegaScraper')
+          .replaceAll(RegExp(r'\b(saket|sakinator)\b', caseSensitive: false), '')
+          .trim();
       final enriched = BadgeService.enrichStream(
         rawTitle: rawTitle,
         mediaTitle: meta.title,

@@ -128,7 +128,7 @@ class TorboxService {
         },
         body: jsonEncode({
           'link': url.trim(),
-          'client': 'sakinator-MegaScraper',
+          'client': 'MegaScraper',
         }),
       ).timeout(const Duration(seconds: 8));
 
