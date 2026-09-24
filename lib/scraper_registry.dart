@@ -54,6 +54,11 @@ import 'upstream/services/scraper/sites/hianime.dart';
 import 'upstream/services/scraper/sites/dramacool.dart';
 import 'upstream/services/scraper/sites/bollyflix.dart';
 import 'upstream/services/scraper/sites/gogoanime.dart';
+import 'upstream/services/scraper/sites/yomovies.dart';
+import 'upstream/services/scraper/sites/playdesi.dart';
+import 'upstream/services/scraper/sites/hdhub4u.dart';
+import 'upstream/services/scraper/sites/animepahe.dart';
+import 'upstream/services/scraper/sites/kissasian.dart';
 
 class ScraperRegistry {
   static List<StreamScraper> getAllScrapers() => [
@@ -108,5 +113,10 @@ class ScraperRegistry {
     DramacoolScraper(),
     BollyflixScraper(),
     GogoanimeScraper(),
+    YoMoviesScraper(),
+    PlayDesiScraper(),
+    HDHub4uScraper(),
+    AnimePaheScraper(),
+    KissAsianScraper(),
   ];
 }

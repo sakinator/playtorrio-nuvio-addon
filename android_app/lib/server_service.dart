@@ -198,10 +198,10 @@ class ServerService {
       // 2. Stremio/Nuvio Addon Manifest
       if (path == '/manifest.json') {
         final manifest = {
-          'id': 'org.playtorrio.http',
-          'version': '1.3.0',
-          'name': 'PlayTorrio HTTP Streams & Cinema',
-          'description': '51 Direct Cloud Scrapers + YouTube, Archive.org & Dailymotion Indian & Global Catalogs (100% Non-Torrent)',
+          'id': 'org.saket.streams',
+          'version': '1.4.0',
+          'name': 'saket',
+          'description': '56 Direct Cloud Scrapers + YouTube, Archive.org & Dailymotion Indian & Global Catalogs (100% Non-Torrent)',
           'resources': ['catalog', 'meta', 'stream'],
           'types': ['movie', 'series'],
           'idPrefixes': ['tt', 'tmdb', 'kitsu', 'yt:', 'archive:', 'dm:'],

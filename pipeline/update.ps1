@@ -1,8 +1,8 @@
-# Pipeline script to update scrapers from PlayTorrioV3
+# Pipeline script to update saket Streams Addon
 Set-Location -Path "$PSScriptRoot\.."
 
 Write-Host "==========================================================" -ForegroundColor Cyan
-Write-Host " 🔄 PlayTorrio Upstream Scraper Update Pipeline" -ForegroundColor Magenta
+Write-Host " 🔄 saket Streams Addon Update & Pull Pipeline" -ForegroundColor Magenta
 Write-Host "==========================================================" -ForegroundColor Cyan
 
 # 1. Locate Dart SDK
@@ -23,30 +23,33 @@ if (-not $dartExe) {
     exit 1
 }
 
-# 2. Fetch and Pull from Upstream
-Write-Host "`n[1/3] Checking for upstream updates from PlayTorrioV3..." -ForegroundColor Yellow
-Push-Location "upstream\PlayTorrioV3"
+# 2. Pull updates from GitHub repository
+Write-Host "`n[1/4] Pulling latest updates from GitHub..." -ForegroundColor Yellow
 try {
-    $beforeHash = git rev-parse HEAD
-    git fetch origin main --quiet
-    $afterRemote = git rev-parse origin/main
-
-    if ($beforeHash -eq $afterRemote) {
-        Write-Host "  -> Already up-to-date with upstream (commit: $beforeHash)" -ForegroundColor Green
-    } else {
-        Write-Host "  -> New commits found! Pulling updates..." -ForegroundColor Cyan
-        git pull origin main
-        $newHash = git rev-parse HEAD
-        Write-Host "  -> Successfully updated to commit: $newHash" -ForegroundColor Green
-    }
+    $pullOut = git pull origin main
+    Write-Host "  -> $pullOut" -ForegroundColor Green
 } catch {
     Write-Host "  -> Git pull error: $_" -ForegroundColor Red
-} finally {
-    Pop-Location
 }
 
-# 3. Regenerate Scraper Registry
-Write-Host "`n[2/3] Scanning scraper sites and regenerating registry..." -ForegroundColor Yellow
+# 3. Pull Upstream if present
+if (Test-Path "upstream\PlayTorrioV3\.git") {
+    Write-Host "`n[2/4] Checking for upstream updates from PlayTorrioV3..." -ForegroundColor Yellow
+    Push-Location "upstream\PlayTorrioV3"
+    try {
+        git pull origin main --quiet
+        Write-Host "  -> Upstream checked." -ForegroundColor Green
+    } catch {
+        Write-Host "  -> Upstream git pull error: $_" -ForegroundColor Gray
+    } finally {
+        Pop-Location
+    }
+} else {
+    Write-Host "`n[2/4] Skipping PlayTorrioV3 submodule (standalone mode)." -ForegroundColor Gray
+}
+
+# 4. Regenerate Scraper Registry
+Write-Host "`n[3/4] Scanning scraper sites and regenerating registry..." -ForegroundColor Yellow
 & $dartExe run tool/generate_registry.dart
 if ($LASTEXITCODE -eq 0) {
     Write-Host "  -> Scraper registry updated successfully." -ForegroundColor Green
@@ -54,13 +57,26 @@ if ($LASTEXITCODE -eq 0) {
     Write-Host "  -> Failed to generate scraper registry." -ForegroundColor Red
 }
 
-# 4. Notify Running Server (Hot-Reload)
-Write-Host "`n[3/3] Checking if addon server is running for hot-reload..." -ForegroundColor Yellow
+# 5. Compile binary
+Write-Host "`n[4/4] Compiling updated standalone server executable..." -ForegroundColor Yellow
+& $dartExe compile exe bin/server.dart -o playtorrio-addon-new.exe
+if ($LASTEXITCODE -eq 0) {
+    # If server is not running or can be replaced
+    try {
+        Move-Item -Path "playtorrio-addon-new.exe" -Destination "playtorrio-addon.exe" -Force -ErrorAction Stop
+        Write-Host "  -> Successfully updated playtorrio-addon.exe!" -ForegroundColor Green
+    } catch {
+        Write-Host "  -> Server is currently running. Binary will be replaced on next restart." -ForegroundColor Yellow
+    }
+}
+
+# 6. Notify Running Server (Hot-Reload)
 try {
-    $res = Invoke-RestMethod -Uri "http://localhost:7000/api/pipeline/update" -Method Post -TimeoutSec 5 -ErrorAction Stop
-    Write-Host "  -> Addon server notified! Scrapers hot-reloaded: $($res.message)" -ForegroundColor Green
+    $port = 7002
+    $res = Invoke-RestMethod -Uri "http://localhost:$port/api/pipeline/update" -Method Post -TimeoutSec 5 -ErrorAction Stop
+    Write-Host "  -> Addon server notified on port $port! Scrapers hot-reloaded: $($res.message)" -ForegroundColor Green
 } catch {
-    Write-Host "  -> Server is not currently running. Changes will be loaded automatically on next start." -ForegroundColor Gray
+    Write-Host "  -> Changes loaded. If server is running on a different port, please restart it." -ForegroundColor Gray
 }
 
 Write-Host "`n==========================================================" -ForegroundColor Cyan

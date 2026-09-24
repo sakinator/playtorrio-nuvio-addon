@@ -31,7 +31,7 @@ void main(List<String> args) async {
   final server = await HttpServer.bind(InternetAddress.anyIPv4, cfg.port);
 
   print('===============================================================');
-  print('       ⚡ PlayTorrio HTTP Streams Addon for Nuvio ⚡           ');
+  print('             ⚡ saket Streams Addon for Nuvio ⚡              ');
   print('===============================================================');
   print(' Status: RUNNING');
   print(' Port:   ${cfg.port}');
@@ -86,10 +86,10 @@ Future<void> _handleRequest(HttpRequest request, String lanIp, int port) async {
     // ── 2. Stremio/Nuvio Addon Manifest ───────────────────────────────────
     if (path == '/manifest.json') {
       final manifest = {
-        'id': 'org.playtorrio.http',
-        'version': '1.3.0',
-        'name': 'PlayTorrio HTTP Streams & Cinema',
-        'description': '51 Direct Cloud Scrapers + YouTube, Archive.org & Dailymotion Indian & Global Catalogs (100% Non-Torrent)',
+        'id': 'org.saket.streams',
+        'version': '1.4.0',
+        'name': 'saket',
+        'description': '56 Direct Cloud Scrapers + YouTube, Archive.org & Dailymotion Indian & Global Catalogs (100% Non-Torrent)',
         'resources': ['catalog', 'meta', 'stream'],
         'types': ['movie', 'series'],
         'idPrefixes': ['tt', 'tmdb', 'kitsu', 'yt:', 'archive:', 'dm:'],
@@ -248,6 +248,20 @@ Future<void> _handleRequest(HttpRequest request, String lanIp, int port) async {
     if (path == '/health') {
       request.response.headers.contentType = ContentType.json;
       request.response.write(jsonEncode({'status': 'ok', 'port': AddonConfig.instance.port}));
+      await request.response.close();
+      return;
+    }
+
+    // ── 8. Nuvio Badges Configuration ─────────────────────────────────────
+    if (path == '/badges.json') {
+      request.response.headers.contentType = ContentType.json;
+      final badgesFile = File('data/badges.json');
+      if (await badgesFile.exists()) {
+        request.response.write(await badgesFile.readAsString());
+      } else {
+        // Return default badges structure
+        request.response.write(jsonEncode({'status': 'ok', 'badges': 'configured'}));
+      }
       await request.response.close();
       return;
     }

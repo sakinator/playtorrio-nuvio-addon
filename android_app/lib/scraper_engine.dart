@@ -5,6 +5,7 @@ import 'config.dart';
 import 'metadata_service.dart';
 import 'upstream/models/stream/stream_model.dart';
 import 'upstream/services/scraper/stream_scraper.dart';
+import 'badge_service.dart';
 
 class ScrapedStream {
   final String name;
@@ -167,28 +168,50 @@ class ScraperEngine {
         behaviorHints['proxyHeaders'] = {'request': headers};
       }
 
-      // ── Display strings ───────────────────────────────────────────────
+      // ── Display strings (No mention of saket, standard scene filename & badges) ──
       final titleLines = <String>[];
       final originalTitle = (src.title ?? '').trim();
-      if (originalTitle.isNotEmpty && originalTitle != providerName) {
-        titleLines.add(originalTitle);
+
+      // 1. Generate standard scene filename (so Nuvio's regex-based badges trigger)
+      final sceneFilename = BadgeService.formatSceneFilename(
+        title: meta.title,
+        year: meta.year,
+        season: meta.season,
+        episode: meta.episode,
+        quality: q,
+        codec: src.codec,
+        audio: badge.isNotEmpty ? badge : null,
+        originalFilename: (originalTitle.contains('.') && !originalTitle.contains('Direct Cloud') && !originalTitle.contains('\n'))
+            ? originalTitle
+            : null,
+      );
+      titleLines.add(sceneFilename);
+
+      // 2. Extract badges & technical details
+      final matchedBadges = BadgeService.getBadges('$sceneFilename $originalTitle $q $badge ${src.codec ?? ""}');
+      final badgeStr = matchedBadges.isNotEmpty
+          ? matchedBadges.map((b) => '[$b]').join(' ')
+          : (q.isNotEmpty ? '[$q]' : '');
+
+      final details = <String>[];
+      if (badgeStr.isNotEmpty) details.add(badgeStr);
+      if (src.fileSize != null && src.fileSize!.isNotEmpty) details.add('💾 ${src.fileSize}');
+      if (isHls) {
+        details.add('⚡ HLS');
+      } else {
+        details.add('⚡ Direct');
       }
+      if (isProxied) details.add('🔀 Proxied');
 
-      final subInfo = <String>[];
-      if (q.isNotEmpty) subInfo.add('[$q]');
-      if (isHls) subInfo.add('⚡ HLS');
-      if (badge.isNotEmpty) subInfo.add(badge);
-      if (src.codec != null) subInfo.add(src.codec!);
-      if (src.fileSize != null) subInfo.add('💾 ${src.fileSize}');
-      if (isProxied) subInfo.add('🔀 Proxied');
+      if (details.isNotEmpty) titleLines.add(details.join(' • '));
 
-      if (subInfo.isNotEmpty) titleLines.add(subInfo.join(' '));
-      titleLines.add('🌐 Provider: $providerName');
+      // 3. Provider / Source Name (Never mentions saket)
+      titleLines.add('🌐 Source: $providerName');
 
       final displayTitle = titleLines.join('\n');
       final displayName = q.isNotEmpty
-          ? 'PlayTorrio\n[$providerName $q]'
-          : 'PlayTorrio\n[$providerName]';
+          ? '$providerName\n$q'
+          : providerName;
 
       finalStreams.add(ScrapedStream(
         name: displayName,

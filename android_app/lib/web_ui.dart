@@ -32,7 +32,7 @@ class WebUI {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PlayTorrio HTTP Addon for Nuvio</title>
+  <title>saket Streams Addon</title>
   <style>
     :root {
       --bg: #0d1117;
@@ -238,8 +238,8 @@ class WebUI {
 <body>
   <div class="container">
     <header>
-      <h1>⚡ PlayTorrio HTTP Streams</h1>
-      <p class="subtitle">Direct HTTP & HLS Scrapers for Nuvio Media Center</p>
+      <h1>⚡ saket Streams Addon</h1>
+      <p class="subtitle">56 Non-Torrent Cloud Scrapers + Badges for Nuvio Media Center</p>
     </header>
 
     <!-- Installation Box -->
@@ -254,6 +254,11 @@ class WebUI {
         <label style="min-width: 110px; font-weight:600;">PC (Localhost):</label>
         <input class="url-input" id="localUrl" value="$manifestLocal" readonly>
         <button class="btn" onclick="copyText('localUrl')">📋 Copy Local URL</button>
+      </div>
+      <div class="url-box">
+        <label style="min-width: 110px; font-weight:600;">🏷️ Badges JSON:</label>
+        <input class="url-input" id="badgesUrl" value="http://$localIp:$port/badges.json" readonly>
+        <button class="btn" onclick="copyText('badgesUrl')">📋 Copy Badges URL</button>
       </div>
       
       <div class="instructions">
