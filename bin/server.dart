@@ -255,11 +255,22 @@ Future<void> _handleRequest(HttpRequest request, String lanIp, int port) async {
     // ── 8. Nuvio Badges Configuration ─────────────────────────────────────
     if (path == '/badges.json') {
       request.response.headers.contentType = ContentType.json;
-      final badgesFile = File('data/badges.json');
-      if (await badgesFile.exists()) {
-        request.response.write(await badgesFile.readAsString());
+      final exeParent = File(Platform.resolvedExecutable).parent.path;
+      final candidates = [
+        File('data/badges.json'),
+        File('$exeParent/data/badges.json'),
+        File('${Directory.current.path}/data/badges.json'),
+      ];
+      File? found;
+      for (final f in candidates) {
+        if (f.existsSync()) {
+          found = f;
+          break;
+        }
+      }
+      if (found != null) {
+        request.response.write(await found.readAsString());
       } else {
-        // Return default badges structure
         request.response.write(jsonEncode({'status': 'ok', 'badges': 'configured'}));
       }
       await request.response.close();
@@ -286,15 +297,17 @@ Future<void> _handleRequest(HttpRequest request, String lanIp, int port) async {
 
 Future<Map<String, dynamic>> _runUpdatePipeline() async {
   try {
-    print('[Pipeline] Running upstream git pull in upstream/PlayTorrioV3...');
-    final gitRes = await Process.run(
-      'git',
-      ['pull', 'origin', 'main'],
-      workingDirectory: 'upstream/PlayTorrioV3',
-    );
-
-    final gitOutput = '${gitRes.stdout}\n${gitRes.stderr}'.trim();
-    print('[Pipeline] Git pull output:\n$gitOutput');
+    String gitOutput = 'Up to date';
+    if (Directory('upstream/PlayTorrioV3/.git').existsSync()) {
+      print('[Pipeline] Running upstream git pull in upstream/PlayTorrioV3...');
+      final gitRes = await Process.run(
+        'git',
+        ['pull', 'origin', 'main'],
+        workingDirectory: 'upstream/PlayTorrioV3',
+      );
+      gitOutput = '${gitRes.stdout}\n${gitRes.stderr}'.trim();
+      print('[Pipeline] Git pull output:\n$gitOutput');
+    }
 
     print('[Pipeline] Regenerating scraper registry...');
 
