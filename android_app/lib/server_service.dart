@@ -333,6 +333,7 @@ class ServerService {
       // 4b. Torbox Debrid Play Endpoint: /torbox/play?url=...
       if (path == '/torbox/play') {
         final targetUrl = request.uri.queryParameters['url'];
+        final headersParam = request.uri.queryParameters['headers'];
         if (targetUrl == null || targetUrl.isEmpty) {
           request.response.statusCode = HttpStatus.badRequest;
           request.response.write('Missing url parameter');
@@ -340,9 +341,16 @@ class ServerService {
           return;
         }
         final apiKey = AddonConfig.instance.torboxApiKey.trim();
+        _addLog('Torbox play: $targetUrl');
         final debridedUrl = await TorboxService.instance.debridLink(targetUrl, apiKey);
         if (debridedUrl != null && debridedUrl.isNotEmpty) {
+          _addLog('Torbox CDN streaming redirect');
           request.response.redirect(Uri.parse(debridedUrl), status: HttpStatus.found);
+          return;
+        }
+        if (headersParam != null && headersParam.isNotEmpty) {
+          final proxyUrl = '$localBaseUrl/proxy?url=${Uri.encodeComponent(targetUrl)}&headers=${Uri.encodeComponent(headersParam)}';
+          request.response.redirect(Uri.parse(proxyUrl), status: HttpStatus.found);
           return;
         }
         request.response.redirect(Uri.parse(targetUrl), status: HttpStatus.found);

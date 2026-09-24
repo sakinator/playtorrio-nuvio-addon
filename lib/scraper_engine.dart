@@ -200,6 +200,38 @@ class ScraperEngine {
         provider: providerName,
         quality: q,
       ));
+
+      // ── If not cached but supported by TorBox, provide 1-click "Cache via Nuvio" stream ──
+      if (!isTorboxCached && torboxKey.isNotEmpty && TorboxService.instance.isSupportedHoster(rawUrl)) {
+        final headersParam = headers.isNotEmpty ? '&headers=${Uri.encodeComponent(jsonEncode(headers))}' : '';
+        final cachePlayUrl = '$localBaseUrl/torbox/play?url=${Uri.encodeComponent(rawUrl)}$headersParam';
+        final qLabel = q.isNotEmpty ? q : 'HD';
+
+        final cacheEnriched = BadgeService.enrichStream(
+          rawTitle: rawTitle,
+          mediaTitle: meta.title,
+          year: meta.year,
+          season: meta.season,
+          episode: meta.episode,
+          quality: q,
+          codec: src.codec,
+          audioBadge: badge,
+          fileSize: src.fileSize,
+          providerName: '$providerName [TorBox Cache]',
+          isCached: false,
+          isHls: isHls,
+          isProxied: false,
+        );
+
+        finalStreams.add(ScrapedStream(
+          name: 'TorBox Cache\n$qLabel',
+          title: '${cacheEnriched['title']}\n⚡ Click via Nuvio to cache to TorBox & start playback',
+          url: cachePlayUrl,
+          behaviorHints: const {'notWebReady': false},
+          provider: '$providerName (TorBox)',
+          quality: q,
+        ));
+      }
     }
 
     // Sort: 4K > 1080p > 720p > 480p > unknown

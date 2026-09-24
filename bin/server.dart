@@ -225,6 +225,7 @@ Future<void> _handleRequest(HttpRequest request, String lanIp, int port) async {
     // ── 4b. Torbox Debrid Play Endpoint: /torbox/play?url=... ──────────────
     if (path == '/torbox/play') {
       final targetUrl = request.uri.queryParameters['url'];
+      final headersParam = request.uri.queryParameters['headers'];
       if (targetUrl == null || targetUrl.isEmpty) {
         request.response.statusCode = HttpStatus.badRequest;
         request.response.write('Missing url parameter');
@@ -232,12 +233,19 @@ Future<void> _handleRequest(HttpRequest request, String lanIp, int port) async {
         return;
       }
       final apiKey = AddonConfig.instance.torboxApiKey.trim();
+      print('[Torbox] Play request for: $targetUrl');
       final debridedUrl = await TorboxService.instance.debridLink(targetUrl, apiKey);
       if (debridedUrl != null && debridedUrl.isNotEmpty) {
+        print('[Torbox] Redirecting to TorBox CDN: $debridedUrl');
         request.response.redirect(Uri.parse(debridedUrl), status: HttpStatus.found);
         return;
       }
-      // Fallback: redirect to original URL
+      // Fallback: if headers required, redirect to proxy; otherwise direct to targetUrl
+      if (headersParam != null && headersParam.isNotEmpty) {
+        final proxyUrl = '$localBaseUrl/proxy?url=${Uri.encodeComponent(targetUrl)}&headers=${Uri.encodeComponent(headersParam)}';
+        request.response.redirect(Uri.parse(proxyUrl), status: HttpStatus.found);
+        return;
+      }
       request.response.redirect(Uri.parse(targetUrl), status: HttpStatus.found);
       return;
     }
