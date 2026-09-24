@@ -1,0 +1,5 @@
+name: flutter
+description: Minimal standalone shim for flutter/foundation in headless pure Dart environments.
+version: 0.0.1
+environment:
+  sdk: '>=3.0.0 <4.0.0'

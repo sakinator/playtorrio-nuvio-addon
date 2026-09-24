@@ -1,0 +1,22 @@
+# Dart & OS artifacts
+.dart_tool/
+.packages
+pubspec.lock
+data/settings.json
+data/config.json
+*.zip
+*.exe
+upstream/
+test/test_*.dart
+test/scraper_test.dart
+
+# Flutter & Android
+**/build/
+**/.dart_tool/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/android/.gradle/
+**/android/local.properties
+**/android/app/build/
+**/android/app/local.properties
+

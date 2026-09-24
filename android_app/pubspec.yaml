@@ -1,0 +1,28 @@
+name: playtorrio_nuvio_addon
+description: "PlayTorrio HTTP Streams Addon Server for Nuvio (Android TV & Mobile)"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+  flutter: '>=3.19.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  http: ^1.2.2
+  html: ^0.15.5
+  crypto: ^3.0.3
+  pointycastle: ^3.9.1
+  shared_preferences: ^2.3.2
+  flutter_foreground_task: ^6.1.1
+  url_launcher: ^6.3.0
+
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
