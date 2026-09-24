@@ -49,6 +49,9 @@ import 'upstream/services/scraper/sites/vuflix.dart';
 import 'upstream/services/scraper/sites/xdownloader.dart';
 import 'upstream/services/scraper/sites/xpass.dart';
 import 'upstream/services/scraper/sites/zxcstream.dart';
+import 'upstream/services/scraper/sites/vegamovies.dart';
+import 'upstream/services/scraper/sites/hianime.dart';
+import 'upstream/services/scraper/sites/dramacool.dart';
 
 class ScraperRegistry {
   static List<StreamScraper> getAllScrapers() => [
@@ -98,5 +101,8 @@ class ScraperRegistry {
     XDownloaderScraper(),
     XPassScraper(),
     ZxcStreamScraper(),
+    VegamoviesScraper(),
+    HiAnimeScraper(),
+    DramacoolScraper(),
   ];
 }

@@ -8,6 +8,7 @@ import 'metadata_service.dart';
 import 'proxy.dart';
 import 'scraper_engine.dart';
 import 'web_ui.dart';
+import 'catalog_service.dart';
 
 class ServerService {
   static final ServerService instance = ServerService._();
@@ -198,13 +199,13 @@ class ServerService {
       if (path == '/manifest.json') {
         final manifest = {
           'id': 'org.playtorrio.http',
-          'version': '1.0.0',
-          'name': 'PlayTorrio HTTP Streams',
-          'description': 'Direct HTTP & HLS stream scraper from PlayTorrio (46 providers, no torrents required)',
-          'resources': ['stream'],
+          'version': '1.2.0',
+          'name': 'PlayTorrio HTTP Streams & Cinema',
+          'description': '49 Direct Cloud Scrapers + YouTube, Archive.org & Dailymotion Indian & Global Catalogs (100% Non-Torrent)',
+          'resources': ['catalog', 'meta', 'stream'],
           'types': ['movie', 'series'],
-          'idPrefixes': ['tt', 'tmdb', 'kitsu'],
-          'catalogs': [],
+          'idPrefixes': ['tt', 'tmdb', 'kitsu', 'yt:', 'archive:', 'dm:'],
+          'catalogs': CatalogService.getCatalogs(),
           'behaviorHints': {
             'configurable': true,
             'configurationRequired': false,
@@ -216,17 +217,89 @@ class ServerService {
         return;
       }
 
-      // 3. Streams endpoint: /stream/:type/:id.json
+      // 3. Catalogs Endpoint: /catalog/:type/:id.json
+      if (path.startsWith('/catalog/')) {
+        final segments = request.uri.pathSegments;
+        if (segments.length >= 3) {
+          final type = segments[1];
+          var catId = segments[2];
+          if (catId.endsWith('.json')) {
+            catId = catId.substring(0, catId.length - 5);
+          }
+
+          String? search;
+          String? genre;
+          int skip = 0;
+
+          if (segments.length >= 4) {
+            var extra = Uri.decodeComponent(segments[3]);
+            if (extra.endsWith('.json')) {
+              extra = extra.substring(0, extra.length - 5);
+            }
+            final parts = extra.split('&');
+            for (final p in parts) {
+              if (p.startsWith('search=')) search = p.substring(7);
+              if (p.startsWith('genre=')) genre = p.substring(6);
+              if (p.startsWith('skip=')) skip = int.tryParse(p.substring(5)) ?? 0;
+            }
+          }
+
+          _addLog('Catalog: $catId ($genre)');
+          final items = await CatalogService.instance.getCatalogItems(
+            type: type,
+            id: catId,
+            search: search,
+            genre: genre,
+            skip: skip,
+          );
+
+          request.response.headers.contentType = ContentType.json;
+          request.response.write(jsonEncode({'metas': items}));
+          await request.response.close();
+          return;
+        }
+      }
+
+      // 4. Metadata Detail Endpoint: /meta/:type/:id.json
+      if (path.startsWith('/meta/')) {
+        final segments = request.uri.pathSegments;
+        if (segments.length >= 3) {
+          final type = segments[1];
+          var metaId = Uri.decodeComponent(segments[2]);
+          if (metaId.endsWith('.json')) {
+            metaId = metaId.substring(0, metaId.length - 5);
+          }
+
+          final meta = await CatalogService.instance.getMetaDetail(type, metaId);
+          if (meta != null) {
+            request.response.headers.contentType = ContentType.json;
+            request.response.write(jsonEncode({'meta': meta}));
+            await request.response.close();
+            return;
+          }
+        }
+      }
+
+      // 5. Streams endpoint: /stream/:type/:id.json
       if (path.startsWith('/stream/')) {
         final segments = request.uri.pathSegments;
         if (segments.length >= 3) {
           final type = segments[1];
-          var idWithExt = segments[2];
+          var idWithExt = Uri.decodeComponent(segments[2]);
           if (idWithExt.endsWith('.json')) {
             idWithExt = idWithExt.substring(0, idWithExt.length - 5);
           }
 
           _addLog('Stream request: $type/$idWithExt');
+
+          // Custom video streams (YouTube, Archive.org, Dailymotion)
+          if (idWithExt.startsWith('yt:') || idWithExt.startsWith('archive:') || idWithExt.startsWith('dm:')) {
+            final customStreams = await CatalogService.instance.resolveCustomStreams(type, idWithExt);
+            request.response.headers.contentType = ContentType.json;
+            request.response.write(jsonEncode({'streams': customStreams}));
+            await request.response.close();
+            return;
+          }
 
           MediaMetadata? meta = await MetadataService.resolve(type: type, rawId: idWithExt);
           meta ??= MediaMetadata(
@@ -248,6 +321,7 @@ class ServerService {
           return;
         }
       }
+
 
       // 4. Stream Proxy: /proxy?url=...
       if (path == '/proxy') {
