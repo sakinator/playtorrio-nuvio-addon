@@ -87,9 +87,9 @@ Future<void> _handleRequest(HttpRequest request, String lanIp, int port) async {
     if (path == '/manifest.json') {
       final manifest = {
         'id': 'org.playtorrio.http',
-        'version': '1.2.0',
+        'version': '1.3.0',
         'name': 'PlayTorrio HTTP Streams & Cinema',
-        'description': '49 Direct Cloud Scrapers + YouTube, Archive.org & Dailymotion Indian & Global Catalogs (100% Non-Torrent)',
+        'description': '51 Direct Cloud Scrapers + YouTube, Archive.org & Dailymotion Indian & Global Catalogs (100% Non-Torrent)',
         'resources': ['catalog', 'meta', 'stream'],
         'types': ['movie', 'series'],
         'idPrefixes': ['tt', 'tmdb', 'kitsu', 'yt:', 'archive:', 'dm:'],
