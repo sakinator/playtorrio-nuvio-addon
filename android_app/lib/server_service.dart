@@ -188,7 +188,7 @@ class ServerService {
       // 1. Web dashboard
       if (path == '/' || path == '/configure') {
         request.response.headers.contentType = ContentType.html;
-        request.response.write(WebUI.render(localIp: lan, port: port));
+        request.response.write(WebUI.render(localIp: localIp.value, port: port));
         await request.response.close();
         return;
       }
