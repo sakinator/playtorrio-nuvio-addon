@@ -308,6 +308,10 @@ class ScraperEngine {
         'lang': s.language,
       }).toList();
 
+      final ratingBadge = (cfg.showRatingsInStreams && meta.omdb != null && meta.omdb!.formattedRatingBadge.isNotEmpty)
+          ? '\n${meta.omdb!.formattedRatingBadge}'
+          : '';
+
       if (isTorboxCached) {
         // ── 1. Link is ALREADY TorBox cached: show 2 links (Cached + Uncached) ──
         final torboxPlayUrl = '$localBaseUrl/torbox/play?url=${Uri.encodeComponent(rawUrl)}';
@@ -330,7 +334,7 @@ class ScraperEngine {
         final cachedBadge = cachedEnriched['badgeHeader'] ?? qLabel;
         final cachedStream = ScrapedStream(
           name: '⚡ TorBox [Cached]\n$cachedBadge',
-          title: '${cachedEnriched['title']}\n⚡ Cached on TorBox CDN • Instant High-Speed Playback',
+          title: '${cachedEnriched['title']}$ratingBadge\n⚡ Cached on TorBox CDN • Instant High-Speed Playback',
           url: torboxPlayUrl,
           behaviorHints: const {'notWebReady': false},
           provider: '$providerName (TorBox Cached)',
@@ -342,7 +346,7 @@ class ScraperEngine {
 
         finalStreams.add(ScrapedStream(
           name: directEnriched['name']!,
-          title: '${directEnriched['title']}\n🌐 Original Direct Hoster Link (Uncached)',
+          title: '${directEnriched['title']}$ratingBadge\n🌐 Original Direct Hoster Link (Uncached)',
           url: directStreamUrl,
           behaviorHints: directBehaviorHints,
           provider: providerName,
@@ -373,7 +377,7 @@ class ScraperEngine {
         final cacheBadge = cacheEnriched['badgeHeader'] ?? qLabel;
         finalStreams.add(ScrapedStream(
           name: '⚡ TorBox [Cache]\n$cacheBadge',
-          title: '${cacheEnriched['title']}\n⚡ Click via Nuvio to cache to TorBox & start playback',
+          title: '${cacheEnriched['title']}$ratingBadge\n⚡ Click via Nuvio to cache to TorBox & start playback',
           url: cachePlayUrl,
           behaviorHints: const {'notWebReady': false},
           provider: '$providerName (TorBox Cache)',
@@ -383,7 +387,7 @@ class ScraperEngine {
 
         final directStream = ScrapedStream(
           name: directEnriched['name']!,
-          title: '${directEnriched['title']}\n🌐 Original Direct Hoster Link (Uncached)',
+          title: '${directEnriched['title']}$ratingBadge\n🌐 Original Direct Hoster Link (Uncached)',
           url: directStreamUrl,
           behaviorHints: directBehaviorHints,
           provider: providerName,
@@ -396,7 +400,7 @@ class ScraperEngine {
         // ── 3. Standard Non-Hoster / Direct Stream (1 link) ──
         final directStream = ScrapedStream(
           name: directEnriched['name']!,
-          title: directEnriched['title']!,
+          title: '${directEnriched['title']}$ratingBadge',
           url: directStreamUrl,
           behaviorHints: directBehaviorHints,
           provider: providerName,

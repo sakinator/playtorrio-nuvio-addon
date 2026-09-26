@@ -181,6 +181,38 @@ Future<void> _handleRequest(HttpRequest request, String lanIp, int port) async {
           await request.response.close();
           return;
         }
+
+        // Standard movie / series metadata enriched with Fanart.tv ClearLogos & OMDb ratings
+        final resolved = await MetadataService.resolve(type: type, rawId: metaId);
+        if (resolved != null) {
+          final metaObj = <String, dynamic>{
+            'id': resolved.id,
+            'type': resolved.type,
+            'name': resolved.title,
+            if (resolved.genres != null && resolved.genres!.isNotEmpty)
+              'genres': resolved.genres
+            else if (resolved.omdb?.genre != null)
+              'genres': resolved.omdb!.genre!.split(', ').map((s) => s.trim()).toList()
+            else
+              'genres': ['Cinema'],
+            'year': resolved.year?.toString() ?? resolved.omdb?.year ?? '',
+            'releaseInfo': resolved.year?.toString() ?? resolved.omdb?.year ?? '',
+            'description': resolved.description ?? resolved.omdb?.plot ?? '',
+            if (resolved.omdb?.director != null && resolved.omdb!.director!.isNotEmpty)
+              'director': [resolved.omdb!.director!],
+            if (resolved.omdb?.actors != null && resolved.omdb!.actors!.isNotEmpty)
+              'cast': resolved.omdb!.actors!.split(', ').map((s) => s.trim()).toList(),
+            if (resolved.omdb?.imdbRating != null && resolved.omdb!.imdbRating != 'N/A')
+              'imdbRating': resolved.omdb!.imdbRating,
+            if (resolved.poster != null) 'poster': resolved.poster,
+            if (resolved.background != null) 'background': resolved.background,
+            if (resolved.logo != null) 'logo': resolved.logo,
+          };
+          request.response.headers.contentType = ContentType.json;
+          request.response.write(jsonEncode({'meta': metaObj}));
+          await request.response.close();
+          return;
+        }
       }
     }
 
@@ -341,6 +373,18 @@ Future<void> _handleRequest(HttpRequest request, String lanIp, int port) async {
       }
       if (bodyJson.containsKey('enableDeadLinkFilter')) {
         AddonConfig.instance.enableDeadLinkFilter = bodyJson['enableDeadLinkFilter'] == true;
+      }
+      if (bodyJson.containsKey('showRatingsInStreams')) {
+        AddonConfig.instance.showRatingsInStreams = bodyJson['showRatingsInStreams'] == true;
+      }
+      if (bodyJson.containsKey('omdbApiKey')) {
+        AddonConfig.instance.omdbApiKey = bodyJson['omdbApiKey'].toString().trim();
+      }
+      if (bodyJson.containsKey('fanartApiKey')) {
+        AddonConfig.instance.fanartApiKey = bodyJson['fanartApiKey'].toString().trim();
+      }
+      if (bodyJson.containsKey('tvdbApiKey')) {
+        AddonConfig.instance.tvdbApiKey = bodyJson['tvdbApiKey'].toString().trim();
       }
       await AddonConfig.instance.save();
       request.response.headers.contentType = ContentType.json;

@@ -17,12 +17,22 @@ class AddonConfig {
   String tmdbApiKey = 'b3556f3b206e16f82df4d1f6fd4545e6';
   String torboxApiKey = '';
 
+  /// API 5: OMDb & IMDb Ratings API Key
+  String omdbApiKey = 'b9a5e69d';
+
+  /// API 6: Fanart.tv ClearLogo & High-Res Artwork API Key
+  String fanartApiKey = '';
+
+  /// API 4: TheTVDB API Key (Episode Mappings & Alternate Ordering)
+  String tvdbApiKey = '';
+
   // Stream Filtering Profiles & Optimization
   bool excludeCams = true;
   String maxResolution = 'all'; // 'all', '1080p', '720p'
   String preferredLanguage = 'any'; // 'any', 'hindi', 'english', 'tamil', 'telugu', 'malayalam', 'kannada', 'bengali', 'punjabi', 'dual'
   bool enableDeduplication = true;
   bool enableDeadLinkFilter = true;
+  bool showRatingsInStreams = true;
 
   static final File _configFile = File('data/config.json');
 
@@ -54,6 +64,18 @@ class AddonConfig {
         }
         if (map['torboxApiKey'] is String) {
           torboxApiKey = map['torboxApiKey'];
+        }
+        if (map['omdbApiKey'] is String && (map['omdbApiKey'] as String).isNotEmpty) {
+          omdbApiKey = map['omdbApiKey'];
+        }
+        if (map['fanartApiKey'] is String) {
+          fanartApiKey = map['fanartApiKey'];
+        }
+        if (map['tvdbApiKey'] is String) {
+          tvdbApiKey = map['tvdbApiKey'];
+        }
+        if (map['showRatingsInStreams'] is bool) {
+          showRatingsInStreams = map['showRatingsInStreams'];
         }
         if (map['excludeCams'] is bool) {
           excludeCams = map['excludeCams'];
@@ -91,6 +113,10 @@ class AddonConfig {
         'autoCheckUpdates': autoCheckUpdates,
         'tmdbApiKey': tmdbApiKey,
         'torboxApiKey': torboxApiKey,
+        'omdbApiKey': omdbApiKey,
+        'fanartApiKey': fanartApiKey,
+        'tvdbApiKey': tvdbApiKey,
+        'showRatingsInStreams': showRatingsInStreams,
         'excludeCams': excludeCams,
         'maxResolution': maxResolution,
         'preferredLanguage': preferredLanguage,

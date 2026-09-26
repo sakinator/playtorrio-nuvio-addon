@@ -1,6 +1,9 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'config.dart';
+import 'omdb_service.dart';
+import 'fanart_service.dart';
+import 'tvdb_service.dart';
 
 class MediaMetadata {
   final String id;
@@ -11,6 +14,18 @@ class MediaMetadata {
   final int? episode;
   final String? imdbId;
   final int? tmdbId;
+  final int? tvdbId;
+
+  // Enriched details
+  final String? episodeTitle;
+  final int? absoluteEpisode;
+  final String? description;
+  final List<String>? genres;
+  final String? poster;
+  final String? background;
+  final String? logo;
+  final OmdbMetadata? omdb;
+  final ArtworkMetadata? artwork;
 
   MediaMetadata({
     required this.id,
@@ -21,16 +36,24 @@ class MediaMetadata {
     this.episode,
     this.imdbId,
     this.tmdbId,
+    this.tvdbId,
+    this.episodeTitle,
+    this.absoluteEpisode,
+    this.description,
+    this.genres,
+    this.poster,
+    this.background,
+    this.logo,
+    this.omdb,
+    this.artwork,
   });
 
   @override
   String toString() =>
-      'MediaMetadata($type, "$title", year: $year, S${season}E${episode}, imdb: $imdbId, tmdb: $tmdbId)';
+      'MediaMetadata($type, "$title", year: $year, S${season}E${episode}, imdb: $imdbId, tmdb: $tmdbId, ep: "$episodeTitle", abs: $absoluteEpisode)';
 }
 
 class MetadataService {
-  // API key is read from AddonConfig so users can supply their own key in
-  // data/config.json without recompiling.
   static String get _apiKey => AddonConfig.instance.tmdbApiKey;
 
   static const _tmdbDirect = 'https://api.themoviedb.org/3';
@@ -86,6 +109,11 @@ class MetadataService {
     int? tmdbId;
     String? title;
     int? year;
+    String? description;
+    List<String>? genres;
+    String? poster;
+    String? background;
+    String? logo;
 
     final isTv = (type == 'series' || type == 'tv');
     final cinemetaType = isTv ? 'series' : 'movie';
@@ -103,6 +131,13 @@ class MetadataService {
           final meta = data['meta'];
           if (meta != null) {
             title = meta['name']?.toString();
+            description = meta['description']?.toString();
+            poster = meta['poster']?.toString();
+            background = meta['background']?.toString();
+            logo = meta['logo']?.toString();
+            if (meta['genres'] is List) {
+              genres = (meta['genres'] as List).map((e) => e.toString()).toList();
+            }
             final yStr = meta['year']?.toString();
             if (yStr != null) {
               year = int.tryParse(yStr.split('–')[0].split('-')[0].trim());
@@ -122,6 +157,7 @@ class MetadataService {
             final first = results.first;
             tmdbId = first['id'] as int?;
             title ??= (first['name'] ?? first['title'])?.toString();
+            description ??= first['overview']?.toString();
             final dateStr = (first['first_air_date'] ?? first['release_date'])?.toString();
             if (year == null && dateStr != null && dateStr.length >= 4) {
               year = int.tryParse(dateStr.substring(0, 4));
@@ -140,6 +176,7 @@ class MetadataService {
               final first = results.first;
               tmdbId = first['id'] as int?;
               title ??= (first['name'] ?? first['title'])?.toString();
+              description ??= first['overview']?.toString();
             }
           }
         } catch (_) {}
@@ -155,6 +192,7 @@ class MetadataService {
             final data = jsonDecode(res.body);
             title = (data['name'] ?? data['title'])?.toString();
             imdbId = data['imdb_id']?.toString();
+            description = data['overview']?.toString();
             final dateStr = (data['first_air_date'] ?? data['release_date'])?.toString();
             if (dateStr != null && dateStr.length >= 4) {
               year = int.tryParse(dateStr.substring(0, 4));
@@ -168,6 +206,49 @@ class MetadataService {
       return null;
     }
 
+    // ── Concurrently Resolve APIs 4 (TVDB), 5 (OMDb), & 6 (Fanart.tv) ──
+    EpisodeInfo? epInfo;
+    OmdbMetadata? omdbData;
+    ArtworkMetadata? artworkData;
+
+    try {
+      final futures = <Future<void>>[];
+
+      // API 5: OMDb & IMDb Ratings
+      futures.add(
+        OmdbService.instance.getMetadata(imdbId, title: title, year: year).then((val) {
+          omdbData = val;
+        }),
+      );
+
+      // API 6: Fanart.tv ClearLogos & 4K backdrops
+      futures.add(
+        FanartService.instance
+            .getArtwork(type: isTv ? 'series' : 'movie', imdbId: imdbId, tmdbId: tmdbId)
+            .then((val) {
+          artworkData = val;
+        }),
+      );
+
+      // API 4: TVDB / Episode Mapping for series
+      if (isTv && season != null && episode != null && imdbId != null) {
+        futures.add(
+          TvdbService.instance
+              .getEpisodeInfo(imdbId: imdbId, season: season, episode: episode, title: title)
+              .then((val) {
+            epInfo = val;
+          }),
+        );
+      }
+
+      await Future.wait(futures).timeout(const Duration(milliseconds: 3500));
+    } catch (_) {}
+
+    // Prefer Fanart ClearLogo and background if available; fallback to Cinemeta/Metahub
+    final finalLogo = artworkData?.logo ?? logo ?? (imdbId != null ? 'https://images.metahub.space/logo/medium/$imdbId/img' : null);
+    final finalBackground = artworkData?.background ?? background ?? (imdbId != null ? 'https://images.metahub.space/background/medium/$imdbId/img' : null);
+    final finalPoster = artworkData?.poster ?? poster ?? (imdbId != null ? 'https://images.metahub.space/poster/medium/$imdbId/img' : null);
+
     final result = MediaMetadata(
       id: rawId,
       type: isTv ? 'series' : 'movie',
@@ -177,6 +258,15 @@ class MetadataService {
       episode: episode,
       imdbId: imdbId,
       tmdbId: tmdbId,
+      episodeTitle: epInfo?.title,
+      absoluteEpisode: epInfo?.absoluteEpisode,
+      description: description ?? omdbData?.plot,
+      genres: genres,
+      poster: finalPoster,
+      background: finalBackground,
+      logo: finalLogo,
+      omdb: omdbData,
+      artwork: artworkData,
     );
 
     _cache[cacheKey] = result;

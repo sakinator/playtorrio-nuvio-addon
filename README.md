@@ -15,6 +15,9 @@ A high-performance local Stremio & Nuvio-compatible addon server featuring **56 
   - **Strict Privacy Guarantee:** Your TorBox API key is strictly manual-input only. It is saved in gitignored `data/config.json` and is **never** auto-scanned from personal directories or leaked in stream titles or GitHub commits.
 - **Short-Term Scrape Cache (12m TTL):** In-memory LRU ring buffer that caches scraped streams for 12 minutes. Repeated playback, switching streams, or backing out in Nuvio is instantaneous (0ms).
 - **Fast Dead-Link Filter:** Rapid 1200ms parallel HEAD probe on direct stream links to purge 404/broken file hoster links before they hit Nuvio.
+- **Live Ratings & Tomatometer (OMDb API):** Live IMDb ratings (`⭐ 8.8 IMDb`), Rotten Tomatoes tomatometer (`🍅 86% RT`), and Metacritic scores (`Ⓜ️ 74 Metascore`) stamped directly onto stream cards and `/meta` detail responses.
+- **Fanart.tv ClearLogos & 4K Artwork:** Transparent ClearLogo PNGs (`hdmovielogo`/`clearlogo`) and crystal-clear 4K backdrops for Nuvio's hero title banner, with automatic fallback to Metahub CDN.
+- **TheTVDB Episode Mappings:** Episode mapping for anime, cartoons, and Indian serials. Resolves absolute episode numbers (e.g. `Episode 1089` instead of `S21E72`) and episode titles so scrapers never miss anime releases.
 - **Stream Filtering Profiles:**
   - **Clean Drawer Mode:** Automatically strips low-grade CAM, TS, PreDVD, and Telesync releases when high-quality WEB-DL or BluRay copies exist.
   - **Max Resolution Cap:** Configurable resolution limits (`4K`, `1080p Max`, `720p Max`) for bandwidth-constrained or TV devices.

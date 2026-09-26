@@ -13,6 +13,10 @@ class WebUI {
     final manifestLan = 'http://$localIp:$port/manifest.json';
     final cfg = AddonConfig.instance;
     final torboxApiKey = cfg.torboxApiKey;
+    final omdbApiKey = cfg.omdbApiKey;
+    final fanartApiKey = cfg.fanartApiKey;
+    final tvdbApiKey = cfg.tvdbApiKey;
+    final showRatingsChecked = cfg.showRatingsInStreams ? 'checked' : '';
     final excludeCamsChecked = cfg.excludeCams ? 'checked' : '';
     final dedupeChecked = cfg.enableDeduplication ? 'checked' : '';
     final deadLinkChecked = cfg.enableDeadLinkFilter ? 'checked' : '';
@@ -568,6 +572,45 @@ class WebUI {
             <div style="color:var(--text-muted); font-size:0.8rem;">Runs a rapid 1200ms parallel HEAD probe on direct stream links to eliminate 404/broken file hosters.</div>
           </div>
         </label>
+
+        <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
+          <input type="checkbox" id="chkShowRatings" $showRatingsChecked style="width:18px; height:18px;">
+          <div>
+            <strong style="color:var(--text);">Display Live Ratings in Stream Cards</strong>
+            <div style="color:var(--text-muted); font-size:0.8rem;">Stamps IMDb ⭐, Rotten Tomatoes 🍅, and Metacritic Ⓜ️ scores directly onto stream links and /meta responses.</div>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <!-- Metadata & Artwork API Integrations -->
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 14px; flex-wrap:wrap; gap:8px;">
+        <h2>🎨 Metadata & Artwork API Integrations (OMDb, Fanart, TVDB)</h2>
+        <button class="btn btn-primary" onclick="saveSettings()">💾 Save API Keys</button>
+      </div>
+      <p style="color:var(--text-muted); margin-bottom:16px; font-size:0.9rem;">
+        Elevate Nuvio and Stremio with crystal-clear transparent ClearLogos, 4K banners, live Rotten Tomatoes/IMDb ratings, and anime absolute episode mappings.
+      </p>
+
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:16px;">
+        <div style="background:#090d13; border:1px solid var(--border); border-radius:8px; padding:14px;">
+          <label style="font-weight:600; display:block; margin-bottom:6px;">⭐ OMDb API Key (IMDb / Rotten Tomatoes):</label>
+          <input type="text" id="omdbApiKey" value="$omdbApiKey" placeholder="e.g. b9a5e69d" style="width:100%; padding:8px; background:#161b22; border:1px solid var(--border); border-radius:6px; color:var(--text); font-size:0.88rem;">
+          <div style="color:var(--text-muted); font-size:0.78rem; margin-top:6px;">Supplies live IMDb ratings, RT tomatometer, and Metacritic scores. Pre-filled with active key.</div>
+        </div>
+
+        <div style="background:#090d13; border:1px solid var(--border); border-radius:8px; padding:14px;">
+          <label style="font-weight:600; display:block; margin-bottom:6px;">✨ Fanart.tv API Key (ClearLogos & 4K Art):</label>
+          <input type="text" id="fanartApiKey" value="$fanartApiKey" placeholder="Enter Fanart.tv Project / Client Key" style="width:100%; padding:8px; background:#161b22; border:1px solid var(--border); border-radius:6px; color:var(--text); font-size:0.88rem;">
+          <div style="color:var(--text-muted); font-size:0.78rem; margin-top:6px;">Renders transparent PNG ClearLogos and 4K backdrops in Nuvio hero view. Auto-falls back to Metahub.</div>
+        </div>
+
+        <div style="background:#090d13; border:1px solid var(--border); border-radius:8px; padding:14px;">
+          <label style="font-weight:600; display:block; margin-bottom:6px;">📺 TheTVDB API Key (Episode Mappings):</label>
+          <input type="text" id="tvdbApiKey" value="$tvdbApiKey" placeholder="Enter TheTVDB v4 API Key" style="width:100%; padding:8px; background:#161b22; border:1px solid var(--border); border-radius:6px; color:var(--text); font-size:0.88rem;">
+          <div style="color:var(--text-muted); font-size:0.78rem; margin-top:6px;">Maps absolute episode numbers (e.g. EP 1089) and alternate episode ordering for anime and serials.</div>
+        </div>
       </div>
     </div>
 
@@ -769,11 +812,15 @@ class WebUI {
             preferredLanguage: document.getElementById('prefLangSelect').value,
             enableDeduplication: document.getElementById('chkDedupe').checked,
             enableDeadLinkFilter: document.getElementById('chkDeadLink').checked,
+            showRatingsInStreams: document.getElementById('chkShowRatings').checked,
+            omdbApiKey: document.getElementById('omdbApiKey').value.trim(),
+            fanartApiKey: document.getElementById('fanartApiKey').value.trim(),
+            tvdbApiKey: document.getElementById('tvdbApiKey').value.trim(),
           })
         });
         const data = await res.json();
         if (data.success) {
-          showToast('✅ Playback & Filtering Settings Saved!');
+          showToast('✅ Playback & API Settings Saved!');
         } else {
           showToast('❌ Error saving settings');
         }
