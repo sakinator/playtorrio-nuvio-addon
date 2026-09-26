@@ -104,15 +104,16 @@ The included CI workflow (`.github/workflows/build-apk.yml`) compiles the releas
 
 ---
 
-## 📺 Adding to Nuvio or Stremio
+## 📺 Quick Install in Nuvio & Stremio
 
-1. Open **Nuvio** or **Stremio**.
-2. Navigate to **Settings** ➔ **Add-ons** ➔ **Add Addon / Install from URL**.
-3. Paste the Addon Manifest URL:
-   - **Running on the same device:** `http://localhost:7002/manifest.json`
-   - **Running on PC, streaming on TV/Phone:** `http://<YOUR_PC_LAN_IP>:7002/manifest.json` (e.g. `http://192.168.0.127:7002/manifest.json`)
-4. Click **Install**.
-5. Select any movie or series to enjoy instant direct cloud streams!
+### Option 1: 1-Click Install (PC or Android with Stremio Installed)
+- Click **[🚀 Install to Stremio / Nuvio](stremio://127.0.0.1:7002/manifest.json)** (or click the green 1-Click button in the Web Dashboard at `http://localhost:7002/configure`).
+
+### Option 2: Install from URL (Android TV, FireStick & Phone on Same Wi-Fi)
+1. Open **Nuvio** or **Stremio** on your TV or phone.
+2. Go to **Settings** ➔ **Add-ons** ➔ **Install from URL** (or click the **+** button).
+3. Paste the LAN URL: `http://<YOUR_PC_LAN_IP>:7002/manifest.json` (e.g. `http://192.168.0.127:7002/manifest.json`).
+4. Click **Install**. All 56 providers and rich catalogs will immediately populate your search and stream results!
 
 ---
 

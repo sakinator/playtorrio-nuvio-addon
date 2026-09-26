@@ -539,25 +539,59 @@ class WebUI {
       <div class="status-chip"><span class="status-dot"></span> <strong>Circuit Breaker:</strong> 56 Providers Monitored</div>
     </div>
 
-    <!-- Installation Box -->
-    <div class="card">
-      <h2>🔌 Nuvio Addon Manifest URLs</h2>
-      <div class="url-box">
-        <label style="min-width: 110px; font-weight:600;">LAN (Nuvio TV):</label>
-        <input class="url-input" id="lanUrl" value="$manifestLan" readonly>
-        <button class="btn btn-primary" onclick="copyText('lanUrl')">📋 Copy LAN URL</button>
+    <!-- Quick Install & Manifest Card -->
+    <div class="card" style="background: linear-gradient(180deg, rgba(22, 27, 34, 0.95) 0%, rgba(13, 17, 23, 0.95) 100%);">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:14px;">
+        <h2>🔌 Quick Install in Nuvio & Stremio</h2>
+        <span class="badge" style="background:rgba(88, 166, 255, 0.15); color:var(--blue); border:1px solid rgba(88, 166, 255, 0.3); font-size:0.8rem; padding:4px 10px;">
+          📡 Wi-Fi IP: $localIp
+        </span>
       </div>
-      <div class="url-box">
-        <label style="min-width: 110px; font-weight:600;">PC (Localhost):</label>
-        <input class="url-input" id="localUrl" value="$manifestLocal" readonly>
-      <div class="instructions">
-        <strong>💡 How to install in Nuvio & Stremio:</strong>
-        <ol>
-          <li>Open <strong>Nuvio</strong> (or Stremio) on your PC, Android TV, or Mobile device.</li>
-          <li>Navigate to <strong>Settings</strong> ➔ <strong>Add-ons</strong> ➔ <strong>Install from URL</strong> (or click the <strong>+</strong> button).</li>
-          <li>Paste the <strong>LAN URL</strong> (if running Nuvio on Android TV/Phone) or <strong>Localhost URL</strong> (if running on this PC).</li>
-          <li>Click <strong>Install</strong>. Streams will now directly populate movie & TV pages with inbuilt visual OTT badges (Netflix, Prime, Hotstar, JioCinema, SonyLIV, Zee5), 4K/HDR tags, and clean scene formatting!</li>
-        </ol>
+
+      <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap:14px;">
+        <!-- Option 1: This PC -->
+        <div style="background:#090d13; border:1px solid var(--border); border-radius:10px; padding:16px; display:flex; flex-direction:column; justify-content:space-between; gap:12px;">
+          <div>
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
+              <span style="font-weight:700; font-size:0.95rem; color:var(--text);">💻 This PC (Local Player)</span>
+              <span style="font-size:0.7rem; color:var(--green-light); background:rgba(35, 134, 54, 0.2); padding:2px 8px; border-radius:12px; font-weight:600;">1-Click</span>
+            </div>
+            <p style="font-size:0.82rem; color:var(--text-muted); line-height:1.4;">
+              If Nuvio or Stremio is installed on this PC, launch and add the addon directly:
+            </p>
+          </div>
+          <div>
+            <a href="stremio://127.0.0.1:$port/manifest.json" class="btn btn-primary" style="width:100%; justify-content:center; padding:10px 14px; font-size:0.92rem; font-weight:700; text-decoration:none;">
+              🚀 1-Click Install to Stremio / Nuvio
+            </a>
+            <div style="display:flex; gap:8px; margin-top:8px;">
+              <input class="url-input" id="localUrl" value="$manifestLocal" readonly style="font-size:0.82rem; padding:6px 10px;">
+              <button type="button" class="btn" onclick="copyText('localUrl')" style="padding:6px 12px; font-size:0.8rem; white-space:nowrap;">📋 Copy</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Option 2: Android TV & Mobile -->
+        <div style="background:#090d13; border:1px solid var(--border); border-radius:10px; padding:16px; display:flex; flex-direction:column; justify-content:space-between; gap:12px;">
+          <div>
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
+              <span style="font-weight:700; font-size:0.95rem; color:var(--text);">📺 Android TV & Mobile (Wi-Fi)</span>
+              <span style="font-size:0.7rem; color:var(--blue); background:rgba(88, 166, 255, 0.2); padding:2px 8px; border-radius:12px; font-weight:600;">Same Network</span>
+            </div>
+            <p style="font-size:0.82rem; color:var(--text-muted); line-height:1.4;">
+              For Android TV, FireStick, or Mobile connected to the same Wi-Fi:
+            </p>
+          </div>
+          <div>
+            <div style="display:flex; gap:8px; margin-bottom:8px;">
+              <input class="url-input" id="lanUrl" value="$manifestLan" readonly style="font-size:0.82rem; padding:8px 10px; color:var(--green-light);">
+              <button type="button" class="btn btn-primary" onclick="copyText('lanUrl')" style="padding:8px 14px; font-size:0.85rem; white-space:nowrap; font-weight:600;">📋 Copy LAN URL</button>
+            </div>
+            <div style="font-size:0.76rem; color:var(--text-muted); display:flex; align-items:center; gap:6px;">
+              <span>💡</span> Open <strong>Nuvio/Stremio</strong> ➔ <strong>Add-ons (+)</strong> ➔ Paste URL ➔ <strong>Install</strong>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 

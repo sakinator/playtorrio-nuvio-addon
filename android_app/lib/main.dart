@@ -46,6 +46,7 @@ class MainDashboardScreen extends StatefulWidget {
 
 class _MainDashboardScreenState extends State<MainDashboardScreen> {
   final FocusNode _startStopFocus = FocusNode();
+  final FocusNode _oneClickInstallFocus = FocusNode();
   final FocusNode _copyManifestFocus = FocusNode();
   final FocusNode _openWebFocus = FocusNode();
   final FocusNode _refreshIpFocus = FocusNode();
@@ -77,6 +78,7 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
   @override
   void dispose() {
     _startStopFocus.dispose();
+    _oneClickInstallFocus.dispose();
     _copyManifestFocus.dispose();
     _openWebFocus.dispose();
     _refreshIpFocus.dispose();
@@ -168,41 +170,77 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
                 final manifestUrl = 'http://$ip:$port/manifest.json';
                 final dashboardUrl = 'http://$ip:$port/configure';
 
-                return Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 960),
-                    child: ListView(
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-                      children: [
-                        // Header
-                        _buildHeader(running),
-                        const SizedBox(height: 20),
+                return LayoutBuilder(
+                  builder: (context, constraints) {
+                    final isWide = constraints.maxWidth >= 720;
+                    final horizontalPadding = isWide ? 36.0 : 16.0;
+                    final verticalPadding = isWide ? 24.0 : 16.0;
 
-                        // Main Status Card
-                        _buildStatusCard(running, ip, port, manifestUrl),
-                        const SizedBox(height: 20),
+                    return Center(
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(maxWidth: isWide ? 1200 : 600),
+                        child: ListView(
+                          padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: verticalPadding),
+                          children: [
+                            // Header
+                            _buildHeader(running, isWide: isWide),
+                            const SizedBox(height: 18),
 
-                        // TorBox Debrid Card
-                        _buildTorboxCard(),
-                        const SizedBox(height: 20),
-
-                        // Engine & Network Optimizations Card
-                        _buildEngineFeaturesCard(),
-                        const SizedBox(height: 20),
-
-                        // Action Buttons (TV Remote Focusable)
-                        _buildActionButtons(running, manifestUrl, dashboardUrl),
-                        const SizedBox(height: 20),
-
-                        // Live Info Row (Providers & Requests)
-                        _buildInfoRow(),
-                        const SizedBox(height: 20),
-
-                        // Live Logs Card
-                        _buildLogsCard(),
-                      ],
-                    ),
-                  ),
+                            if (isWide) ...[
+                              // Two-column layout for Android TV, Tablet, or Wide Landscape screens
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Left Column: Status, Action Buttons, Server Activity
+                                  Expanded(
+                                    flex: 5,
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                                      children: [
+                                        _buildStatusCard(running, ip, port, manifestUrl),
+                                        const SizedBox(height: 18),
+                                        _buildActionButtons(running, manifestUrl, dashboardUrl),
+                                        const SizedBox(height: 18),
+                                        _buildLogsCard(),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 20),
+                                  // Right Column: TorBox Debrid, Metrics, Optimizations
+                                  Expanded(
+                                    flex: 5,
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                                      children: [
+                                        _buildTorboxCard(),
+                                        const SizedBox(height: 18),
+                                        _buildInfoRow(isWide: true),
+                                        const SizedBox(height: 18),
+                                        _buildEngineFeaturesCard(),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ] else ...[
+                              // Single-column layout for Mobile Portrait
+                              _buildStatusCard(running, ip, port, manifestUrl),
+                              const SizedBox(height: 16),
+                              _buildActionButtons(running, manifestUrl, dashboardUrl),
+                              const SizedBox(height: 16),
+                              _buildTorboxCard(),
+                              const SizedBox(height: 16),
+                              _buildInfoRow(isWide: false),
+                              const SizedBox(height: 16),
+                              _buildEngineFeaturesCard(),
+                              const SizedBox(height: 16),
+                              _buildLogsCard(),
+                            ],
+                          ],
+                        ),
+                      ),
+                    );
+                  },
                 );
               },
             );
@@ -212,30 +250,30 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
     );
   }
 
-  Widget _buildHeader(bool running) {
+  Widget _buildHeader(bool running, {bool isWide = false}) {
     return Row(
       children: [
         Container(
-          width: 52,
-          height: 52,
+          width: isWide ? 56 : 48,
+          height: isWide ? 56 : 48,
           decoration: BoxDecoration(
             color: const Color(0xFF6366F1).withOpacity(0.2),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: const Color(0xFF6366F1), width: 1.5),
           ),
-          child: const Center(
-            child: Icon(Icons.bolt_rounded, color: Color(0xFF818CF8), size: 32),
+          child: Center(
+            child: Icon(Icons.bolt_rounded, color: const Color(0xFF818CF8), size: isWide ? 34 : 28),
           ),
         ),
-        const SizedBox(width: 16),
+        const SizedBox(width: 14),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'sakinator-MegaScraper',
                 style: TextStyle(
-                  fontSize: 26,
+                  fontSize: isWide ? 26 : 21,
                   fontWeight: FontWeight.w900,
                   letterSpacing: -0.5,
                   color: Colors.white,
@@ -243,9 +281,9 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
               ),
               const SizedBox(height: 2),
               Text(
-                'Addon Server for Nuvio & Stremio (Android TV & Mobile)',
+                '56 Cloud Scrapers + TorBox Debrid (Android TV & Mobile)',
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: isWide ? 14 : 12,
                   color: Colors.grey.shade400,
                 ),
               ),
@@ -253,7 +291,7 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
           ),
         ),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          padding: EdgeInsets.symmetric(horizontal: isWide ? 14 : 10, vertical: isWide ? 8 : 6),
           decoration: BoxDecoration(
             color: running ? const Color(0xFF238636).withOpacity(0.2) : Colors.red.withOpacity(0.2),
             borderRadius: BorderRadius.circular(20),
@@ -266,19 +304,19 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                width: 10,
-                height: 10,
+                width: 8,
+                height: 8,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: running ? const Color(0xFF3FB950) : Colors.redAccent,
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 6),
               Text(
                 running ? 'ONLINE' : 'OFFLINE',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  fontSize: 14,
+                  fontSize: isWide ? 13 : 11,
                   letterSpacing: 0.5,
                   color: running ? const Color(0xFF3FB950) : Colors.redAccent,
                 ),
@@ -712,8 +750,8 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
 
   Widget _buildActionButtons(bool running, String manifestUrl, String dashboardUrl) {
     return Wrap(
-      spacing: 16,
-      runSpacing: 16,
+      spacing: 12,
+      runSpacing: 12,
       children: [
         // Start / Stop Toggle
         _TvFocusableButton(
@@ -728,19 +766,49 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
             }
           },
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
                   running ? Icons.stop_rounded : Icons.play_arrow_rounded,
-                  size: 24,
+                  size: 22,
                   color: Colors.white,
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 8),
                 Text(
                   running ? 'Stop Server' : 'Start Server',
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white),
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        // 1-Click Install to Stremio / Nuvio
+        _TvFocusableButton(
+          focusNode: _oneClickInstallFocus,
+          isPrimary: true,
+          primaryColor: const Color(0xFF6366F1),
+          onPressed: () async {
+            final port = AddonConfig.instance.port;
+            final uri = Uri.parse('stremio://127.0.0.1:$port/manifest.json');
+            if (await canLaunchUrl(uri)) {
+              await launchUrl(uri, mode: LaunchMode.externalApplication);
+            } else {
+              _copyToClipboard(manifestUrl, 'Addon Manifest URL');
+            }
+          },
+          child: const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.download_rounded, size: 22, color: Colors.white),
+                SizedBox(width: 8),
+                Text(
+                  '1-Click Install (Stremio / Nuvio)',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white),
                 ),
               ],
             ),
@@ -754,15 +822,15 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
             _copyToClipboard(manifestUrl, 'Addon Manifest URL');
           },
           child: const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            padding: EdgeInsets.symmetric(horizontal: 18, vertical: 14),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.copy_rounded, size: 22, color: Color(0xFF818CF8)),
-                SizedBox(width: 10),
+                Icon(Icons.copy_rounded, size: 20, color: Color(0xFF818CF8)),
+                SizedBox(width: 8),
                 Text(
                   'Copy Manifest URL',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white),
                 ),
               ],
             ),
@@ -781,15 +849,15 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
             }
           },
           child: const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            padding: EdgeInsets.symmetric(horizontal: 18, vertical: 14),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.open_in_browser_rounded, size: 22, color: Color(0xFF38BDF8)),
-                SizedBox(width: 10),
+                Icon(Icons.open_in_browser_rounded, size: 20, color: Color(0xFF38BDF8)),
+                SizedBox(width: 8),
                 Text(
                   'Open Web Dashboard',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white),
                 ),
               ],
             ),
@@ -799,97 +867,112 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
     );
   }
 
-  Widget _buildInfoRow() {
+  Widget _buildInfoRow({bool isWide = true}) {
     final activeCount = ScraperEngine.instance.activeScrapers.length;
     final totalCount = ScraperEngine.instance.getProviderList().length;
 
-    return Row(
-      children: [
-        // Providers Metric Card
-        Expanded(
-          child: Container(
-            padding: const EdgeInsets.all(18),
+    final providersCard = Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF161B22),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFF30363D)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: const Color(0xFF161B22),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFF30363D)),
+              color: const Color(0xFF6366F1).withOpacity(0.15),
+              borderRadius: BorderRadius.circular(12),
             ),
-            child: Row(
+            child: const Icon(Icons.hub_rounded, color: Color(0xFF818CF8), size: 26),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF6366F1).withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(Icons.hub_rounded, color: Color(0xFF818CF8), size: 28),
+                Text(
+                  '$activeCount / $totalCount Active',
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                  overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(width: 14),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '$activeCount / $totalCount Active',
-                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Scraper Providers',
-                      style: TextStyle(fontSize: 13, color: Colors.grey.shade400),
-                    ),
-                  ],
+                const SizedBox(height: 2),
+                Text(
+                  'Scraper Providers',
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade400),
                 ),
               ],
             ),
           ),
-        ),
-        const SizedBox(width: 16),
+        ],
+      ),
+    );
 
-        // Requests Metric Card
-        Expanded(
-          child: ValueListenableBuilder<int>(
-            valueListenable: ServerService.instance.requestCount,
-            builder: (context, count, _) {
-              return Container(
-                padding: const EdgeInsets.all(18),
+    final requestsCard = ValueListenableBuilder<int>(
+      valueListenable: ServerService.instance.requestCount,
+      builder: (context, count, _) {
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: const Color(0xFF161B22),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFF30363D)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF161B22),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFF30363D)),
+                  color: const Color(0xFF238636).withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                child: Row(
+                child: const Icon(Icons.sync_alt_rounded, color: Color(0xFF3FB950), size: 26),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF238636).withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(Icons.sync_alt_rounded, color: Color(0xFF3FB950), size: 28),
+                    Text(
+                      '$count Requests',
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(width: 14),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '$count Requests',
-                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'Handled this session',
-                          style: TextStyle(fontSize: 13, color: Colors.grey.shade400),
-                        ),
-                      ],
+                    const SizedBox(height: 2),
+                    Text(
+                      'Handled this session',
+                      style: TextStyle(fontSize: 12, color: Colors.grey.shade400),
                     ),
                   ],
                 ),
-              );
-            },
+              ),
+            ],
           ),
-        ),
-      ],
+        );
+      },
     );
+
+    if (isWide) {
+      return Row(
+        children: [
+          Expanded(child: providersCard),
+          const SizedBox(width: 14),
+          Expanded(child: requestsCard),
+        ],
+      );
+    } else {
+      return Column(
+        children: [
+          providersCard,
+          const SizedBox(height: 12),
+          requestsCard,
+        ],
+      );
+    }
   }
 
   Widget _buildLogsCard() {
@@ -995,7 +1078,17 @@ class _TvFocusableButtonState extends State<_TvFocusableButton> {
     return FocusableActionDetector(
       focusNode: widget.focusNode,
       autofocus: false,
-      onFocusChange: (focused) => setState(() => _isFocused = focused),
+      onFocusChange: (focused) {
+        setState(() => _isFocused = focused);
+        if (focused) {
+          Scrollable.ensureVisible(
+            context,
+            alignment: 0.5,
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeInOut,
+          );
+        }
+      },
       onShowHoverHighlight: (hovered) => setState(() => _isHovered = hovered),
       actions: {
         ActivateIntent: CallbackAction<ActivateIntent>(
@@ -1006,25 +1099,28 @@ class _TvFocusableButtonState extends State<_TvFocusableButton> {
         SingleActivator(LogicalKeyboardKey.select): ActivateIntent(),
         SingleActivator(LogicalKeyboardKey.enter): ActivateIntent(),
         SingleActivator(LogicalKeyboardKey.space): ActivateIntent(),
+        SingleActivator(LogicalKeyboardKey.gameButtonA): ActivateIntent(),
+        SingleActivator(LogicalKeyboardKey.numpadEnter): ActivateIntent(),
       },
       child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onTap: widget.onPressed,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
           curve: Curves.easeOut,
-          transform: hasHighlight ? Matrix4.diagonal3Values(1.05, 1.05, 1.0) : Matrix4.identity(),
+          transform: hasHighlight ? Matrix4.diagonal3Values(1.04, 1.04, 1.0) : Matrix4.identity(),
           decoration: BoxDecoration(
             color: bg,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: hasHighlight ? const Color(0xFF58A6FF) : const Color(0xFF30363D),
+              color: hasHighlight ? const Color(0xFF38BDF8) : const Color(0xFF30363D),
               width: hasHighlight ? 2.5 : 1.2,
             ),
             boxShadow: hasHighlight
                 ? [
                     BoxShadow(
-                      color: const Color(0xFF58A6FF).withOpacity(0.35),
-                      blurRadius: 16,
+                      color: const Color(0xFF38BDF8).withOpacity(0.4),
+                      blurRadius: 18,
                       spreadRadius: 2,
                     ),
                   ]
