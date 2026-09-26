@@ -15,7 +15,7 @@ PORT="${1:-7000}"
 
 echo ""
 echo "==============================================================="
-echo "    ⚡ sakinator-MegaScraper Addon for Nuvio ⚡"
+echo "               🐕 HostHound Addon for Nuvio 🐕"
 echo "==============================================================="
 
 # ── 1. Find Dart ─────────────────────────────────────────────────────────────
@@ -51,11 +51,15 @@ echo "==============================================================="
 echo ""
 
 # ── 4. Start the server ───────────────────────────────────────────────────────
-COMPILED_BIN="./sakinator-MegaScraper"
-
-if [ -f "$COMPILED_BIN" ] && [ -x "$COMPILED_BIN" ]; then
+if [ -f "./hosthound" ] && [ -x "./hosthound" ]; then
     echo " Using compiled binary (fastest startup)..."
-    exec "$COMPILED_BIN" "$PORT"
+    exec "./hosthound" "$PORT"
+elif [ -f "./unbound" ] && [ -x "./unbound" ]; then
+    echo " Using compiled binary (fastest startup)..."
+    exec "./unbound" "$PORT"
+elif [ -f "./sakinator-MegaScraper" ] && [ -x "./sakinator-MegaScraper" ]; then
+    echo " Using compiled binary (fastest startup)..."
+    exec "./sakinator-MegaScraper" "$PORT"
 elif [ -n "$DART_EXE" ]; then
     echo " Using dart run..."
     exec "$DART_EXE" run bin/server.dart "$PORT"

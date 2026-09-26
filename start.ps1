@@ -1,8 +1,8 @@
-# PowerShell launcher for sakinator-MegaScraper Addon (Windows)
+# PowerShell launcher for HostHound Addon (Windows)
 Set-Location -Path $PSScriptRoot
 
 Write-Host "===============================================================" -ForegroundColor Cyan
-Write-Host "       ⚡ sakinator-MegaScraper Addon for Nuvio ⚡" -ForegroundColor Magenta
+Write-Host "              🐕 HostHound Addon for Nuvio 🐕" -ForegroundColor Magenta
 Write-Host "===============================================================" -ForegroundColor Cyan
 Write-Host ""
 
@@ -23,7 +23,15 @@ if (-not (Test-Path "lib\upstream") -and $dartExe) {
 }
 
 # ── Start server ──────────────────────────────────────────────────────────────
-if (Test-Path "sakinator-MegaScraper.exe") {
+if (Test-Path "hosthound.exe") {
+    Write-Host " Using compiled binary (hosthound.exe)..." -ForegroundColor Green
+    & ".\hosthound.exe" @args
+}
+elseif (Test-Path "unbound.exe") {
+    Write-Host " Using compiled binary (unbound.exe)..." -ForegroundColor Green
+    & ".\unbound.exe" @args
+}
+elseif (Test-Path "sakinator-MegaScraper.exe") {
     Write-Host " Using compiled binary (sakinator-MegaScraper.exe)..." -ForegroundColor Green
     & ".\sakinator-MegaScraper.exe" @args
 }

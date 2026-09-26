@@ -11,16 +11,16 @@ void main() async {
   await ServerService.instance.init();
   // Auto-start server on app launch
   await ServerService.instance.startServer();
-  runApp(const MegaScraperAddonApp());
+  runApp(const HosthoundAddonApp());
 }
 
-class MegaScraperAddonApp extends StatelessWidget {
-  const MegaScraperAddonApp({super.key});
+class HosthoundAddonApp extends StatelessWidget {
+  const HosthoundAddonApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'sakinator-MegaScraper',
+      title: 'HostHound',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         brightness: Brightness.dark,
@@ -271,7 +271,7 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'sakinator-MegaScraper',
+                'HostHound',
                 style: TextStyle(
                   fontSize: isWide ? 26 : 21,
                   fontWeight: FontWeight.w900,
@@ -281,7 +281,7 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
               ),
               const SizedBox(height: 2),
               Text(
-                '56 Cloud Scrapers + TorBox Debrid (Android TV & Mobile)',
+                'Direct Hosters • Regional OTT • TorBox Debrid (Android TV & Mobile)',
                 style: TextStyle(
                   fontSize: isWide ? 14 : 12,
                   color: Colors.grey.shade400,

@@ -1,5 +1,5 @@
-name: playtorrio_nuvio_addon
-description: "PlayTorrio HTTP Streams Addon Server for Nuvio (Android TV & Mobile)"
+name: hosthound
+description: "HostHound — Direct Hosters & TorBox Debrid Stream Engine for Nuvio (Android TV & Mobile)"
 publish_to: 'none'
 version: 1.0.0+1
 

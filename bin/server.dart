@@ -12,7 +12,7 @@ import 'package:playtorrio_nuvio_addon/key_validator.dart';
 
 void main(List<String> args) async {
   // ── Global DNS-over-HTTPS (DoH) & Pre-Warming ─────────────────────────────
-  HttpOverrides.global = MegascraperHttpOverrides();
+  HttpOverrides.global = HosthoundHttpOverrides();
   DohResolver.instance.prewarm([
     'api.torbox.app',
     'cinematv.click',
@@ -51,7 +51,7 @@ void main(List<String> args) async {
   final server = await HttpServer.bind(InternetAddress.anyIPv4, cfg.port);
 
   print('===============================================================');
-  print('          ⚡ sakinator-MegaScraper Addon for Nuvio ⚡         ');
+  print('              🐕 HostHound Addon for Nuvio 🐕             ');
   print('===============================================================');
   print(' Status: RUNNING');
   print(' Port:   ${cfg.port}');
@@ -113,10 +113,10 @@ Future<void> _handleRequest(HttpRequest request, String lanIp, int port) async {
     // ── 2. Stremio/Nuvio Addon Manifest ───────────────────────────────────
     if (path == '/manifest.json') {
       final manifest = {
-        'id': 'org.sakinator.megascraper',
-        'version': '1.5.0',
-        'name': 'sakinator-MegaScraper',
-        'description': '56 Direct Cloud Scrapers + Torbox Debrid + YouTube, Archive.org & Dailymotion Catalogs (100% Non-Torrent)',
+        'id': 'org.sakinator.hosthound',
+        'version': '2.0.0',
+        'name': 'HostHound',
+        'description': 'HostHound — Direct Hosters, Regional OTT & TorBox Cloud Debrid Stream Engine with Smart Proxy & Instant Badges',
         'resources': ['catalog', 'meta', 'stream'],
         'types': ['movie', 'series'],
         'idPrefixes': ['tt', 'tmdb', 'kitsu', 'yt:', 'archive:', 'dm:'],
@@ -457,23 +457,23 @@ Future<void> _handleRequest(HttpRequest request, String lanIp, int port) async {
     // ── 6b. API: Check all updates & GitHub releases: GET /api/updates/check ──
     if (path == '/api/updates/check') {
       Map<String, dynamic> releaseInfo = {
-        'version': 'v1.5.0',
+        'version': 'v2.0.0',
         'isLatest': true,
-        'apkUrl': 'https://github.com/sakinator/playtorrio-nuvio-addon/releases/latest/download/sakinator-MegaScraper.apk',
-        'zipUrl': 'https://github.com/sakinator/playtorrio-nuvio-addon/releases/latest/download/sakinator-MegaScraper-windows-x64.zip',
-        'url': 'https://github.com/sakinator/playtorrio-nuvio-addon/releases',
+        'apkUrl': 'https://github.com/sakinator/hosthound/releases/latest/download/hosthound.apk',
+        'zipUrl': 'https://github.com/sakinator/hosthound/releases/latest/download/hosthound-windows-x64.zip',
+        'url': 'https://github.com/sakinator/hosthound/releases',
       };
       try {
         final client = HttpClient()..connectionTimeout = const Duration(seconds: 4);
-        client.userAgent = 'sakinator-MegaScraper';
-        final req = await client.getUrl(Uri.parse('https://api.github.com/repos/sakinator/playtorrio-nuvio-addon/releases'));
+        client.userAgent = 'HostHound';
+        final req = await client.getUrl(Uri.parse('https://api.github.com/repos/sakinator/hosthound/releases'));
         final res = await req.close();
         if (res.statusCode == 200) {
           final body = await utf8.decodeStream(res);
           final list = jsonDecode(body) as List;
           if (list.isNotEmpty) {
             final latest = list.first as Map;
-            final tagName = latest['tag_name']?.toString() ?? 'v1.5.0';
+            final tagName = latest['tag_name']?.toString() ?? 'v2.0.0';
             final assets = latest['assets'] as List?;
             String? apkUrl;
             String? zipUrl;
@@ -492,8 +492,8 @@ Future<void> _handleRequest(HttpRequest request, String lanIp, int port) async {
               'name': latest['name'],
               'url': latest['html_url'],
               'publishedAt': latest['published_at'],
-              'apkUrl': apkUrl ?? 'https://github.com/sakinator/playtorrio-nuvio-addon/releases/latest/download/sakinator-MegaScraper.apk',
-              'zipUrl': zipUrl ?? 'https://github.com/sakinator/playtorrio-nuvio-addon/releases/latest/download/sakinator-MegaScraper-windows-x64.zip',
+              'apkUrl': apkUrl ?? 'https://github.com/sakinator/hosthound/releases/latest/download/hosthound.apk',
+              'zipUrl': zipUrl ?? 'https://github.com/sakinator/hosthound/releases/latest/download/hosthound-windows-x64.zip',
             };
           }
         }
@@ -501,7 +501,7 @@ Future<void> _handleRequest(HttpRequest request, String lanIp, int port) async {
 
       request.response.headers.contentType = ContentType.json;
       request.response.write(jsonEncode({
-        'currentVersion': 'v1.5.0',
+        'currentVersion': 'v2.0.0',
         'providersCount': ScraperEngine.instance.getProviderList().length,
         'release': releaseInfo,
       }));
@@ -632,8 +632,8 @@ Future<Map<String, dynamic>> _runUpdatePipeline([String channel = 'all']) async 
     Map<String, dynamic>? releaseInfo;
     try {
       final client = HttpClient()..connectionTimeout = const Duration(seconds: 4);
-      client.userAgent = 'sakinator-MegaScraper';
-      final req = await client.getUrl(Uri.parse('https://api.github.com/repos/sakinator/playtorrio-nuvio-addon/releases'));
+      client.userAgent = 'HostHound';
+      final req = await client.getUrl(Uri.parse('https://api.github.com/repos/sakinator/hosthound/releases'));
       final res = await req.close();
       if (res.statusCode == 200) {
         final body = await utf8.decodeStream(res);

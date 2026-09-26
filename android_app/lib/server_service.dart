@@ -44,9 +44,9 @@ class ServerService {
   void _initForegroundTask() {
     FlutterForegroundTask.init(
       androidNotificationOptions: AndroidNotificationOptions(
-        channelId: 'megascraper_server_channel',
-        channelName: 'MegaScraper Server Service',
-        channelDescription: 'Keeps MegaScraper Addon HTTP Server active for Nuvio.',
+        channelId: 'hosthound_server_channel',
+        channelName: 'HostHound Server Service',
+        channelDescription: 'Keeps HostHound Addon HTTP Server active for Nuvio.',
         channelImportance: NotificationChannelImportance.LOW,
         priority: NotificationPriority.LOW,
         iconData: const NotificationIconData(
@@ -140,7 +140,7 @@ class ServerService {
       try {
         if (!await FlutterForegroundTask.isRunningService) {
           await FlutterForegroundTask.startService(
-            notificationTitle: 'MegaScraper Server Active',
+            notificationTitle: 'HostHound Server Active',
             notificationText: 'Serving Nuvio streams on port ${cfg.port}',
           );
         }
@@ -225,10 +225,10 @@ class ServerService {
       // 2. Stremio/Nuvio Addon Manifest
       if (path == '/manifest.json') {
         final manifest = {
-          'id': 'org.sakinator.megascraper',
-          'version': '1.5.0',
-          'name': 'sakinator-MegaScraper',
-          'description': '56 Direct Cloud Scrapers + Torbox Debrid + YouTube, Archive.org & Dailymotion Catalogs (100% Non-Torrent)',
+          'id': 'org.sakinator.hosthound',
+          'version': '2.0.0',
+          'name': 'HostHound',
+          'description': 'HostHound — Direct Hosters, Regional OTT & TorBox Cloud Debrid Stream Engine with Smart Proxy & Instant Badges',
           'resources': ['catalog', 'meta', 'stream'],
           'types': ['movie', 'series'],
           'idPrefixes': ['tt', 'tmdb', 'kitsu', 'yt:', 'archive:', 'dm:'],
@@ -564,23 +564,23 @@ class ServerService {
       // 5h. API: Check all updates & GitHub releases: GET /api/updates/check
       if (path == '/api/updates/check') {
         Map<String, dynamic> releaseInfo = {
-          'version': 'v1.5.0',
+          'version': 'v2.0.0',
           'isLatest': true,
-          'apkUrl': 'https://github.com/sakinator/playtorrio-nuvio-addon/releases/latest/download/sakinator-MegaScraper.apk',
-          'zipUrl': 'https://github.com/sakinator/playtorrio-nuvio-addon/releases/latest/download/sakinator-MegaScraper-windows-x64.zip',
-          'url': 'https://github.com/sakinator/playtorrio-nuvio-addon/releases',
+          'apkUrl': 'https://github.com/sakinator/hosthound/releases/latest/download/hosthound.apk',
+          'zipUrl': 'https://github.com/sakinator/hosthound/releases/latest/download/hosthound-windows-x64.zip',
+          'url': 'https://github.com/sakinator/hosthound/releases',
         };
         try {
           final client = HttpClient()..connectionTimeout = const Duration(seconds: 4);
-          client.userAgent = 'sakinator-MegaScraper';
-          final req = await client.getUrl(Uri.parse('https://api.github.com/repos/sakinator/playtorrio-nuvio-addon/releases'));
+          client.userAgent = 'HostHound';
+          final req = await client.getUrl(Uri.parse('https://api.github.com/repos/sakinator/hosthound/releases'));
           final res = await req.close();
           if (res.statusCode == 200) {
             final body = await utf8.decodeStream(res);
             final list = jsonDecode(body) as List;
             if (list.isNotEmpty) {
               final latest = list.first as Map;
-              final tagName = latest['tag_name']?.toString() ?? 'v1.5.0';
+              final tagName = latest['tag_name']?.toString() ?? 'v2.0.0';
               final assets = latest['assets'] as List?;
               String? apkUrl;
               String? zipUrl;
@@ -599,8 +599,8 @@ class ServerService {
                 'name': latest['name'],
                 'url': latest['html_url'],
                 'publishedAt': latest['published_at'],
-                'apkUrl': apkUrl ?? 'https://github.com/sakinator/playtorrio-nuvio-addon/releases/latest/download/sakinator-MegaScraper.apk',
-                'zipUrl': zipUrl ?? 'https://github.com/sakinator/playtorrio-nuvio-addon/releases/latest/download/sakinator-MegaScraper-windows-x64.zip',
+                'apkUrl': apkUrl ?? 'https://github.com/sakinator/hosthound/releases/latest/download/hosthound.apk',
+                'zipUrl': zipUrl ?? 'https://github.com/sakinator/hosthound/releases/latest/download/hosthound-windows-x64.zip',
               };
             }
           }

@@ -1,9 +1,9 @@
 @echo off
-title sakinator-MegaScraper Addon
+title HostHound Addon
 cd /d "%~dp0"
 
 echo ===============================================================
-echo   sakinator-MegaScraper Addon (56 Cloud Scrapers + TorBox + Badges)
+echo        🐕 HostHound Addon (Direct Hosters + TorBox + Badges)
 echo ===============================================================
 echo.
 
@@ -30,15 +30,21 @@ if not exist "lib\upstream" (
 )
 
 :: ── Start server ─────────────────────────────────────────────────────────────
-if exist "sakinator-MegaScraper.exe" (
-    echo Using compiled binary (sakinator-MegaScraper.exe^)...
-    "sakinator-MegaScraper.exe" %*
+if exist "hosthound.exe" (
+    echo Using compiled binary (hosthound.exe^)...
+    "hosthound.exe" %*
     goto end
 )
 
-if exist "playtorrio-addon.exe" (
-    echo Using compiled binary (playtorrio-addon.exe^)...
-    "playtorrio-addon.exe" %*
+if exist "unbound.exe" (
+    echo Using compiled binary (unbound.exe^)...
+    "unbound.exe" %*
+    goto end
+)
+
+if exist "sakinator-MegaScraper.exe" (
+    echo Using compiled binary (sakinator-MegaScraper.exe^)...
+    "sakinator-MegaScraper.exe" %*
     goto end
 )
 

@@ -1,8 +1,8 @@
-# ⚡ sakinator-MegaScraper Addon for Nuvio & Stremio
+# 🐕 HostHound Addon for Nuvio & Stremio
 
-[![Vibe Coded](https://img.shields.io/badge/Vibe%20Coded-100%25%20with%20AI-ff69b4?style=for-the-badge&logo=visualstudiocode&logoColor=white)](https://github.com/sakinator/playtorrio-nuvio-addon)
-[![Scrapers](https://img.shields.io/badge/Scrapers-56%20Cloud%20Extractors-blueviolet?style=for-the-badge)](https://github.com/sakinator/playtorrio-nuvio-addon)
-[![Platforms](https://img.shields.io/badge/Platforms-Windows%20%7C%20Android%20TV%20%7C%20Linux%20%7C%20macOS-2ea44f?style=for-the-badge)](https://github.com/sakinator/playtorrio-nuvio-addon)
+[![Vibe Coded](https://img.shields.io/badge/Vibe%20Coded-100%25%20with%20AI-ff69b4?style=for-the-badge&logo=visualstudiocode&logoColor=white)](https://github.com/sakinator/hosthound)
+[![Scrapers](https://img.shields.io/badge/Scrapers-56%20Cloud%20Extractors-blueviolet?style=for-the-badge)](https://github.com/sakinator/hosthound)
+[![Platforms](https://img.shields.io/badge/Platforms-Windows%20%7C%20Android%20TV%20%7C%20Linux%20%7C%20macOS-2ea44f?style=for-the-badge)](https://github.com/sakinator/hosthound)
 [![Debrid](https://img.shields.io/badge/TorBox-Cloud%20WebDL%20Caching-0070f3?style=for-the-badge)](https://torbox.app)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 
@@ -46,7 +46,7 @@ A high-performance local Stremio & Nuvio-compatible addon server featuring **56 
 
 ## 🔑 Optional API Keys & Built-In Public Fallbacks (Zero-Key Operation)
 
-**sakinator-MegaScraper works 100% out of the box with zero required API keys.** All external keys are strictly optional personal enhancements:
+**HostHound works 100% out of the box with zero required API keys.** All external keys are strictly optional personal enhancements:
 
 | Integration | Key Requirement | 1-Click Signup Link | Zero-Key Public Fallback | What You Get |
 |---|---|---|---|---|
@@ -65,15 +65,15 @@ The Web Dashboard (`http://localhost:7002/configure`) features inline **🔍 Tes
 ## 🚀 Quick Start (Windows PC)
 
 ### Method 1: Double-Click the Executable
-Run `sakinator-MegaScraper.exe` (or `start.bat`) inside this directory:
+Run `hosthound.exe` (or `start.bat`) inside this directory:
 ```powershell
-.\sakinator-MegaScraper.exe 7002
+.\hosthound.exe 7002
 ```
 
 Console output:
 ```text
 ===============================================================
-          ⚡ sakinator-MegaScraper Addon for Nuvio ⚡         
+               🐕 HostHound Addon for Nuvio 🐕         
 ===============================================================
  Status: RUNNING
  Port:   7002
@@ -108,7 +108,7 @@ The `android_app` directory contains the complete cross-platform Flutter applica
 The included CI workflow (`.github/workflows/build-apk.yml`) compiles the release APK on every push to `main`:
 1. Go to the **Actions** tab on GitHub.
 2. Select **Build Android APK (TV & Mobile)** ➔ Click the latest workflow run.
-3. Download the artifact `sakinator-MegaScraper-apk`.
+3. Download the artifact `hosthound-apk`.
 4. Sideload the APK onto your Android TV or phone.
 
 ---
@@ -142,8 +142,8 @@ TorBox integration is optional but unlocks high-speed cloud caching for hoster l
 ## 📂 Project Structure
 
 ```text
-sakinator-MegaScraper/
-├── sakinator-MegaScraper.exe # Compiled standalone Windows binary
+hosthound/
+├── hosthound.exe             # Compiled standalone Windows binary
 ├── start.bat                 # Windows one-click starter
 ├── start.ps1                 # PowerShell launcher
 ├── bin/
@@ -244,7 +244,7 @@ The unified scraper engine integrates 56 non-torrent cloud providers across Indi
 ## 🔄 Upstream & Cloudstream Extension Sync
 
 ### 1. PlayTorrioV3 Native Scrapers
-`sakinator-MegaScraper` is integrated directly with upstream [ayman708-UX/PlayTorrioV3](https://github.com/ayman708-UX/PlayTorrioV3).
+`HostHound` is integrated directly with upstream [ayman708-UX/PlayTorrioV3](https://github.com/ayman708-UX/PlayTorrioV3).
 - To sync latest providers and fixes:
   - Click **🔄 Check Upstream Updates** in the Web Dashboard (`/configure`), or trigger `POST /api/pipeline/update`.
   - The server clones upstream, scans `lib/upstream/services/scraper/sites/`, regenerates `scraper_registry.dart`, and hot-reloads all active scrapers without restarting.
@@ -257,7 +257,7 @@ The unified scraper engine integrates 56 non-torrent cloud providers across Indi
 
 ## 🏆 Credits & Acknowledgements
 
-`sakinator-MegaScraper` builds upon incredible open-source innovations across the streaming community:
+`HostHound` builds upon incredible open-source innovations across the streaming community:
 
 - **[ayman708-UX / PlayTorrioV3](https://github.com/ayman708-UX/PlayTorrioV3)**: Core Dart scraper models, site extractors, and multi-source scraping architecture.
 - **[Cloudstream 3 Community](https://github.com/recloudstream/cloudstream)** & Extension Authors (*Hexated, Stormunblessed, Hindi Providers*): Pioneering hoster extraction patterns and cloud link bypass techniques.
