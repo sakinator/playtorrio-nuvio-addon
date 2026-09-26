@@ -186,6 +186,10 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
                         _buildTorboxCard(),
                         const SizedBox(height: 20),
 
+                        // Engine & Network Optimizations Card
+                        _buildEngineFeaturesCard(),
+                        const SizedBox(height: 20),
+
                         // Action Buttons (TV Remote Focusable)
                         _buildActionButtons(running, manifestUrl, dashboardUrl),
                         const SizedBox(height: 20),
@@ -588,6 +592,119 @@ class _MainDashboardScreenState extends State<MainDashboardScreen> {
               ),
             ),
           ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEngineFeaturesCard() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: const Color(0xFF161B22),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFF30363D)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.speed_rounded, color: Color(0xFF818CF8), size: 22),
+              SizedBox(width: 10),
+              Text(
+                'Engine & Network Optimizations',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: [
+              _buildFeatureBadge(
+                icon: Icons.shield_rounded,
+                title: 'DoH DNS Fallback',
+                subtitle: 'Cloudflare & Google (Active)',
+                color: const Color(0xFF238636),
+              ),
+              _buildFeatureBadge(
+                icon: Icons.memory_rounded,
+                title: 'HLS Segment Cache',
+                subtitle: '35 MB Ring Buffer (Active)',
+                color: const Color(0xFF1F6FEB),
+              ),
+              _buildFeatureBadge(
+                icon: Icons.video_settings_rounded,
+                title: 'MPEG-DASH Transmuxer',
+                subtitle: 'Virtual HLS Converter (Ready)',
+                color: const Color(0xFF7928CA),
+              ),
+              _buildFeatureBadge(
+                icon: Icons.electric_bolt_rounded,
+                title: 'Auto Circuit Breaker',
+                subtitle: '56 Providers Monitored',
+                color: const Color(0xFFD29922),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFeatureBadge({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0D1117),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFF21262D)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, size: 18, color: color),
+          ),
+          const SizedBox(width: 10),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                subtitle,
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: Color(0xFF8B949E),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );

@@ -18,7 +18,7 @@ class WebUI {
       final name = p['name'];
       final checked = p['enabled'] == true ? 'checked' : '';
       return '''
-        <label class="provider-card">
+        <label class="provider-card" data-name="${name.toString().toLowerCase()}" data-id="${id.toString().toLowerCase()}">
           <input type="checkbox" name="provider" value="$id" $checked onchange="toggleProvider('$id', this.checked)">
           <div class="card-inner">
             <span class="provider-name">$name</span>
@@ -35,6 +35,8 @@ class WebUI {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>sakinator-MegaScraper Addon</title>
+  <!-- HLS.js for embedded web stream player preview -->
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.8/dist/hls.min.js"></script>
   <style>
     :root {
       --bg: #0d1117;
@@ -45,6 +47,7 @@ class WebUI {
       --text: #f0f6fc;
       --text-muted: #8b949e;
       --green: #238636;
+      --green-light: #3fb950;
       --blue: #58a6ff;
       --orange: #d29922;
       --red: #f85149;
@@ -60,16 +63,44 @@ class WebUI {
     .container { max-width: 1080px; margin: 0 auto; }
     header {
       text-align: center;
-      padding: 32px 0 24px;
+      padding: 28px 0 20px;
     }
     h1 {
       font-size: 2.2rem;
       background: var(--accent-grad);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
     }
     p.subtitle { color: var(--text-muted); font-size: 1.05rem; }
+
+    /* Engine Status Banner */
+    .status-banner {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 24px;
+    }
+    .status-chip {
+      background: rgba(22, 27, 34, 0.9);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 6px 14px;
+      font-size: 0.82rem;
+      color: var(--text);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--green-light);
+      box-shadow: 0 0 8px var(--green-light);
+    }
+
     .card {
       background: var(--card-bg);
       border: 1px solid var(--border);
@@ -101,6 +132,31 @@ class WebUI {
       font-family: monospace;
       font-size: 0.95rem;
     }
+    .password-wrapper {
+      flex: 1;
+      position: relative;
+      display: flex;
+    }
+    .password-wrapper input {
+      width: 100%;
+      padding-right: 44px;
+    }
+    .password-toggle-btn {
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 1.1rem;
+      padding: 4px;
+      border-radius: 4px;
+    }
+    .password-toggle-btn:hover {
+      color: var(--text);
+    }
     .btn {
       padding: 8px 14px;
       background: var(--card-bg);
@@ -126,6 +182,14 @@ class WebUI {
     .btn-primary:hover { background: #9139e8; border-color: #9139e8; }
     .btn-success { background: var(--green); border-color: var(--green); color:#fff; }
     .btn-success:hover { background: #2ea043; }
+    .btn-play {
+      background: #1f6feb;
+      border-color: #388bfd;
+      color: #fff;
+    }
+    .btn-play:hover {
+      background: #388bfd;
+    }
     .instructions {
       background: rgba(88, 166, 255, 0.08);
       border: 1px solid rgba(88, 166, 255, 0.2);
@@ -197,10 +261,33 @@ class WebUI {
       border: 1px solid var(--border);
       border-radius: 8px;
       padding: 14px;
-      max-height: 480px;
+      max-height: 520px;
       overflow-y: auto;
       font-size: 0.88rem;
       display: none;
+    }
+    .stream-filter-bar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .stream-filter-chip {
+      background: #161b22;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 4px 10px;
+      border-radius: 16px;
+      cursor: pointer;
+      font-size: 0.78rem;
+      font-weight: 600;
+      transition: all 0.15s;
+    }
+    .stream-filter-chip:hover, .stream-filter-chip.active {
+      background: #21262d;
+      color: var(--text);
+      border-color: var(--blue);
     }
     .stream-item {
       padding: 12px 10px;
@@ -252,6 +339,71 @@ class WebUI {
       z-index: 10000;
       font-weight: 600;
     }
+
+    /* Modal Player Styles */
+    .player-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.85);
+      z-index: 99999;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    .player-modal-content {
+      background: #161b22;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      width: 100%;
+      max-width: 900px;
+      overflow: hidden;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.8);
+      display: flex;
+      flex-direction: column;
+    }
+    .player-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border);
+      background: #0d1117;
+    }
+    .player-title {
+      font-weight: 600;
+      font-size: 1rem;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .player-close-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 1.5rem;
+      cursor: pointer;
+      line-height: 1;
+      padding: 0 4px;
+    }
+    .player-close-btn:hover { color: #fff; }
+    .video-wrapper {
+      position: relative;
+      width: 100%;
+      padding-top: 56.25%; /* 16:9 Aspect Ratio */
+      background: #000;
+    }
+    .video-wrapper video {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
   </style>
 </head>
 <body>
@@ -260,6 +412,14 @@ class WebUI {
       <h1>⚡ sakinator-MegaScraper</h1>
       <p class="subtitle">56 Non-Torrent Cloud Scrapers + Badges + TorBox Debrid for Nuvio & Stremio</p>
     </header>
+
+    <!-- Architecture & Engine Status Pills -->
+    <div class="status-banner">
+      <div class="status-chip"><span class="status-dot"></span> <strong>DNS-over-HTTPS:</strong> Cloudflare & Google Fallback (Active)</div>
+      <div class="status-chip"><span class="status-dot"></span> <strong>HLS Segment Cache:</strong> 35MB RAM Ring Buffer (Active)</div>
+      <div class="status-chip"><span class="status-dot"></span> <strong>DASH to HLS:</strong> Virtual Transmuxer Ready</div>
+      <div class="status-chip"><span class="status-dot"></span> <strong>Circuit Breaker:</strong> 56 Providers Monitored</div>
+    </div>
 
     <!-- Installation Box -->
     <div class="card">
@@ -303,7 +463,10 @@ class WebUI {
       
       <div class="url-box">
         <label style="min-width: 130px; font-weight:600;">TorBox API Key:</label>
-        <input class="url-input" type="password" id="torboxApiKey" value="$torboxApiKey" placeholder="Enter your TorBox API Key">
+        <div class="password-wrapper">
+          <input class="url-input" type="password" id="torboxApiKey" value="$torboxApiKey" placeholder="Enter your TorBox API Key">
+          <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility()" title="Show/Hide Key">👁️</button>
+        </div>
         <button class="btn btn-primary" id="btnSaveTorbox" onclick="saveTorboxKey()">💾 Save & Validate</button>
       </div>
       <div id="torboxAccountInfo" style="font-size:0.88rem; color:var(--text-muted); margin-bottom:14px; display:none;"></div>
@@ -336,21 +499,26 @@ class WebUI {
 
     <!-- Scraper Providers -->
     <div class="card">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 16px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 14px; flex-wrap:wrap; gap:8px;">
         <h2>📦 HTTP Scraper Providers (<span id="enabledCount">$enabledCount</span>/${providers.length} Active)</h2>
         <div style="display:flex; gap:8px;">
           <button class="btn" onclick="bulkToggle(true)">Enable All</button>
           <button class="btn" onclick="bulkToggle(false)">Disable All</button>
         </div>
       </div>
-      <div class="grid">
+      <!-- Instant Search Filter -->
+      <div style="display:flex; gap:10px; margin-bottom:12px; align-items:center;">
+        <input type="text" id="providerSearchInput" placeholder="🔍 Search 56 providers (e.g. hubcloud, 111477, vidsrc, bollyflix)..." oninput="filterProvidersList()" style="flex:1; padding:8px 12px; background:#090d13; border:1px solid var(--border); border-radius:6px; color:var(--text); font-size:0.88rem;">
+        <span id="providerFilteredCount" style="font-size:0.82rem; color:var(--text-muted); white-space:nowrap;">Showing ${providers.length} of ${providers.length}</span>
+      </div>
+      <div class="grid" id="providersGrid">
         $providerCheckboxes
       </div>
     </div>
 
     <!-- Live Stream Tester -->
     <div class="card">
-      <h2>🔍 Live Stream Tester</h2>
+      <h2>🔍 Live Stream Tester & Preview Player</h2>
       <div class="test-box">
         <select id="testType">
           <option value="movie">Movie</option>
@@ -377,64 +545,102 @@ class WebUI {
     </div>
   </div>
 
+  <!-- Inline Stream Player Modal -->
+  <div id="playerModal" class="player-modal" onclick="closePlayerModal(event)">
+    <div class="player-modal-content" onclick="event.stopPropagation()">
+      <div class="player-header">
+        <div class="player-title" id="playerStreamTitle">Stream Preview</div>
+        <button class="player-close-btn" onclick="closePlayerModal()">✕</button>
+      </div>
+      <div class="video-wrapper">
+        <video id="previewVideoPlayer" controls playsinline></video>
+      </div>
+    </div>
+  </div>
+
   <div id="toast" class="toast">Copied to clipboard!</div>
 
   <script>
     let currentStreams = [];
-    let allHosters = [];
+    let activeFilter = 'all';
+    let currentHls = null;
 
     function showToast(msg) {
-      const t = document.getElementById('toast');
-      t.innerText = msg;
-      t.style.display = 'block';
-      setTimeout(() => { t.style.display = 'none'; }, 2500);
+      const toast = document.getElementById('toast');
+      toast.innerText = msg;
+      toast.style.display = 'block';
+      setTimeout(() => { toast.style.display = 'none'; }, 3000);
     }
 
     function copyText(id) {
-      const el = document.getElementById(id);
-      navigator.clipboard.writeText(el.value);
-      showToast('Copied to clipboard!');
+      const copyText = document.getElementById(id);
+      copyText.select();
+      copyText.setSelectionRange(0, 99999);
+      navigator.clipboard.writeText(copyText.value);
+      showToast('📋 Copied: ' + copyText.value);
+    }
+
+    function togglePasswordVisibility() {
+      const input = document.getElementById('torboxApiKey');
+      input.type = input.type === 'password' ? 'text' : 'password';
+    }
+
+    function filterProvidersList() {
+      const query = document.getElementById('providerSearchInput').value.trim().toLowerCase();
+      const cards = document.querySelectorAll('#providersGrid .provider-card');
+      let visible = 0;
+      cards.forEach(c => {
+        const name = c.getAttribute('data-name') || '';
+        const id = c.getAttribute('data-id') || '';
+        if (!query || name.includes(query) || id.includes(query)) {
+          c.style.display = '';
+          visible++;
+        } else {
+          c.style.display = 'none';
+        }
+      });
+      document.getElementById('providerFilteredCount').innerText = 'Showing ' + visible + ' of ' + cards.length;
     }
 
     async function toggleProvider(id, enabled) {
-      await fetch('/api/provider/' + id, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ enabled: enabled })
-      });
-      updateCounter();
-    }
-
-    async function bulkToggle(enabled) {
-      const checkboxes = document.querySelectorAll('input[name="provider"]');
-      for (const cb of checkboxes) {
-        cb.checked = enabled;
-        await fetch('/api/provider/' + cb.value, {
+      try {
+        const res = await fetch('/api/provider/' + id, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ enabled: enabled })
         });
+        const data = await res.json();
+        if (data.success) {
+          const countSpan = document.getElementById('enabledCount');
+          let current = parseInt(countSpan.innerText);
+          countSpan.innerText = enabled ? current + 1 : current - 1;
+          showToast((enabled ? 'Enabled ' : 'Disabled ') + id);
+        }
+      } catch (err) {
+        showToast('Error updating provider');
       }
-      updateCounter();
     }
 
-    function updateCounter() {
-      const checked = document.querySelectorAll('input[name="provider"]:checked').length;
-      document.getElementById('enabledCount').innerText = checked;
-    }
-
-    function normalizeStreamUrl(rawUrl) {
-      if (!rawUrl) return '';
-      if (rawUrl.includes('/proxy?')) {
-        try {
-          const u = new URL(rawUrl);
-          return window.location.origin + u.pathname + u.search;
-        } catch (_) {}
+    async function bulkToggle(enable) {
+      const checkboxes = document.querySelectorAll('input[name="provider"]');
+      const ids = Array.from(checkboxes).map(c => c.value);
+      try {
+        const res = await fetch('/api/providers/bulk', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ids: ids, enabled: enable })
+        });
+        const data = await res.json();
+        if (data.success) {
+          checkboxes.forEach(c => c.checked = enable);
+          document.getElementById('enabledCount').innerText = enable ? checkboxes.length : 0;
+          showToast(enable ? 'All providers enabled' : 'All providers disabled');
+        }
+      } catch (err) {
+        showToast('Error updating providers');
       }
-      return rawUrl;
     }
 
-    // ── TorBox API Functions ──
     async function saveTorboxKey() {
       const key = document.getElementById('torboxApiKey').value.trim();
       const btn = document.getElementById('btnSaveTorbox');
@@ -451,92 +657,41 @@ class WebUI {
           body: JSON.stringify({ apiKey: key })
         });
         const data = await res.json();
-        if (data.success && data.account) {
-          const acc = data.account;
-          badge.style.background = 'rgba(35, 134, 54, 0.2)';
-          badge.style.color = '#3fb950';
-          badge.innerText = 'Active (Plan: ' + (acc.plan || 'Standard') + ')';
-          info.style.display = 'block';
-          info.innerHTML = '👤 <strong>Account:</strong> ' + (acc.email || 'TorBox User') + ' | <strong>Plan:</strong> ' + (acc.plan || 'Free') + ' | <strong>Expires:</strong> ' + (acc.expires_at || 'N/A');
-          showToast('✅ TorBox API key saved & verified!');
-          loadTorboxHosters();
-        } else {
-          badge.style.background = key ? 'rgba(248, 81, 73, 0.2)' : '#21262d';
-          badge.style.color = key ? '#f85149' : 'var(--text-muted)';
-          badge.innerText = key ? 'Invalid Key' : 'Not Configured';
-          info.style.display = 'none';
-          showToast(key ? '❌ Invalid TorBox API Key' : 'TorBox API key cleared');
+        if (data.success) {
+          if (data.valid) {
+            badge.innerText = '✅ ' + (data.plan ? data.plan.toUpperCase() : 'Connected');
+            badge.style.background = 'rgba(35, 134, 54, 0.3)';
+            badge.style.color = '#3fb950';
+            info.style.display = 'block';
+            info.innerHTML = '<strong>Email:</strong> ' + escapeHtml(data.email) + ' | <strong>Plan:</strong> ' + escapeHtml(data.plan) + (data.expires ? ' (Expires: ' + escapeHtml(data.expires) + ')' : '');
+            showToast('✅ TorBox Connected: ' + data.plan);
+          } else {
+            badge.innerText = '❌ Invalid Key';
+            badge.style.background = 'rgba(248, 81, 73, 0.3)';
+            badge.style.color = '#f85149';
+            info.style.display = 'block';
+            info.innerHTML = '<span style="color:#f85149;">' + escapeHtml(data.message) + '</span>';
+            showToast('❌ Invalid TorBox API Key');
+          }
         }
       } catch (e) {
-        showToast('Error validating key: ' + e);
+        showToast('Error validating TorBox key');
       } finally {
         btn.disabled = false;
         btn.innerText = '💾 Save & Validate';
       }
     }
 
-    async function loadTorboxHosters() {
-      const grid = document.getElementById('hostersGrid');
-      grid.innerHTML = '<div style="color:var(--text-muted); padding:8px;">Fetching hosters from TorBox...</div>';
-      try {
-        const res = await fetch('/api/torbox/hosters');
-        const data = await res.json();
-        allHosters = data.hosters || [];
-        renderHosters(allHosters);
-      } catch (e) {
-        grid.innerHTML = '<div style="color:var(--red); padding:8px;">Failed to load hosters: ' + e + '</div>';
-      }
-    }
-
-    function renderHosters(hosters) {
-      const grid = document.getElementById('hostersGrid');
-      if (!hosters || hosters.length === 0) {
-        grid.innerHTML = '<div style="color:var(--text-muted); padding:8px;">No hosters found.</div>';
-        return;
-      }
-      let html = '';
-      for (const h of hosters) {
-        const name = escapeHtml(h.name || h.id || 'Hoster');
-        const domains = Array.isArray(h.domains) ? h.domains.join(', ') : '';
-        const status = h.status === 'down' ? 'down' : 'up';
-        const statusText = status === 'up' ? 'Operational' : 'Down';
-        const statusClass = status === 'up' ? 'status-up' : 'status-down';
-        html += '<div class="hoster-card">';
-        html += '  <div class="hoster-name">' + name + '</div>';
-        html += '  <div class="hoster-domains">' + escapeHtml(domains) + '</div>';
-        html += '  <span class="hoster-status ' + statusClass + '">' + statusText + '</span>';
-        html += '</div>';
-      }
-      grid.innerHTML = html;
-    }
-
-    function filterHosters() {
-      const query = document.getElementById('hosterSearch').value.trim().toLowerCase();
-      if (!query) {
-        renderHosters(allHosters);
-        return;
-      }
-      const filtered = allHosters.filter(h => {
-        const name = (h.name || '').toLowerCase();
-        const domains = (Array.isArray(h.domains) ? h.domains.join(' ') : '').toLowerCase();
-        return name.includes(query) || domains.includes(query);
-      });
-      renderHosters(filtered);
-    }
-
     async function uploadLinkToTorbox(targetUrl) {
       const url = targetUrl || document.getElementById('torboxUploadUrl').value.trim();
-      const statusDiv = document.getElementById('torboxUploadStatus');
-      const btn = document.getElementById('btnUploadTorbox');
-
+      const status = document.getElementById('torboxUploadStatus');
       if (!url) {
-        showToast('Please provide a URL to cache');
+        showToast('Please enter a link to cache');
         return;
       }
 
-      if (btn) btn.disabled = true;
-      statusDiv.style.display = 'block';
-      statusDiv.innerHTML = '<span style="color:var(--blue);">Submitting to TorBox WebDL...</span>';
+      status.style.display = 'block';
+      status.innerHTML = '<span style="color:var(--blue);">Submitting link to TorBox cloud cache...</span>';
 
       try {
         const res = await fetch('/api/torbox/upload', {
@@ -546,17 +701,73 @@ class WebUI {
         });
         const data = await res.json();
         if (data.success) {
-          statusDiv.innerHTML = '<span style="color:var(--green);">✅ Cached / Queued successfully to TorBox! ID: ' + (data.data?.id || 'Active') + '</span>';
-          showToast('✅ Queued to TorBox!');
-          if (!targetUrl) document.getElementById('torboxUploadUrl').value = '';
+          status.innerHTML = '<span style="color:var(--green);">✅ ' + escapeHtml(data.message) + '</span>';
+          showToast('✅ Queued to TorBox Cache!');
         } else {
-          statusDiv.innerHTML = '<span style="color:var(--red);">❌ ' + (data.detail || data.error || 'TorBox upload failed') + '</span>';
+          status.innerHTML = '<span style="color:#f85149;">❌ ' + escapeHtml(data.message) + '</span>';
+          showToast('❌ Failed: ' + data.message);
         }
       } catch (e) {
-        statusDiv.innerHTML = '<span style="color:var(--red);">Error: ' + e + '</span>';
-      } finally {
-        if (btn) btn.disabled = false;
+        status.innerHTML = '<span style="color:#f85149;">Upload error: ' + e + '</span>';
       }
+    }
+
+    async function loadTorboxHosters() {
+      const grid = document.getElementById('hostersGrid');
+      grid.innerHTML = '<div style="color:var(--text-muted); padding:8px;">Fetching active hosters from TorBox...</div>';
+
+      try {
+        const res = await fetch('/api/torbox/hosters');
+        const data = await res.json();
+        if (data.success && data.hosters) {
+          window.torboxHosters = data.hosters;
+          renderHosters(data.hosters);
+        } else {
+          grid.innerHTML = '<div style="color:#f85149; padding:8px;">Failed to load hosters.</div>';
+        }
+      } catch (e) {
+        grid.innerHTML = '<div style="color:#f85149; padding:8px;">Error loading hosters: ' + e + '</div>';
+      }
+    }
+
+    function renderHosters(hosters) {
+      const grid = document.getElementById('hostersGrid');
+      if (!hosters || hosters.length === 0) {
+        grid.innerHTML = '<div style="color:var(--text-muted); padding:8px;">No hosters found.</div>';
+        return;
+      }
+      grid.innerHTML = hosters.map(h => {
+        const isUp = h.status === 'online' || h.status === true || h.status === 'up';
+        const domains = (h.domains || []).slice(0, 3).join(', ');
+        return `
+          <div class="hoster-card">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <span class="hoster-name">\${escapeHtml(h.name || h.id)}</span>
+              <span class="hoster-status \${isUp ? 'status-up' : 'status-down'}">\${isUp ? 'ONLINE' : 'DOWN'}</span>
+            </div>
+            <div class="hoster-domains">\${escapeHtml(domains)}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function filterHosters() {
+      const q = document.getElementById('hosterSearch').value.toLowerCase().trim();
+      if (!window.torboxHosters) return;
+      const filtered = window.torboxHosters.filter(h => {
+        const name = (h.name || h.id || '').toLowerCase();
+        const domains = (h.domains || []).join(' ').toLowerCase();
+        return name.includes(q) || domains.includes(q);
+      });
+      renderHosters(filtered);
+    }
+
+    function normalizeStreamUrl(url) {
+      if (!url) return '';
+      if (url.startsWith('/')) {
+        return window.location.origin + url;
+      }
+      return url;
     }
 
     async function runTest() {
@@ -570,7 +781,7 @@ class WebUI {
       btn.disabled = true;
       btn.innerText = 'Scraping...';
       resultsDiv.style.display = 'block';
-      resultsDiv.innerHTML = '<div style="color:var(--text-muted); padding:10px;">Scraping 56 providers for "' + id + '"...</div>';
+      resultsDiv.innerHTML = '<div style="color:var(--text-muted); padding:10px;">Scraping 56 providers for "' + escapeHtml(id) + '"...</div>';
 
       try {
         const res = await fetch('/stream/' + type + '/' + encodeURIComponent(id) + '.json');
@@ -586,31 +797,17 @@ class WebUI {
             name: rawName,
             title: rawTitle,
             url: finalUrl,
+            isCached: rawName.includes('[Cached]') || rawTitle.includes('Cached on TorBox'),
+            isCache: rawName.includes('[Cache]') || rawTitle.includes('cache to TorBox'),
+            is4K: rawName.includes('4K') || rawTitle.includes('[4K]'),
+            is1080p: rawName.includes('1080p') || rawTitle.includes('[FHD]') || rawTitle.includes('1080p'),
           };
         });
 
         if (currentStreams.length === 0) {
           resultsDiv.innerHTML = '<div style="color:#f85149; padding:10px;">No streams found. Try another title or check your enabled providers.</div>';
         } else {
-          let html = '<div style="font-weight:600; margin-bottom:12px; color:var(--green); font-size:1rem;">Found ' + currentStreams.length + ' stream(s):</div>';
-          for (let i = 0; i < currentStreams.length; i++) {
-            const s = currentStreams[i];
-            const isTorbox = s.url.includes('/torbox/play') || s.title.includes('Torbox') || s.title.includes('Cached');
-            html += '<div class="stream-item">';
-            html += '  <div class="stream-info">';
-            html += '    <div class="stream-title">' + escapeHtml(s.name) + '</div>';
-            html += '    <div class="stream-sub">' + escapeHtml(s.title) + '</div>';
-            html += '  </div>';
-            html += '  <div class="stream-actions">';
-            html += '    <button class="btn btn-primary" onclick="copyStreamUrl(' + i + ')">📋 Copy Stream URL</button>';
-            html += '    <a class="btn" href="' + s.url + '" target="_blank" rel="noreferrer">🔗 Open URL</a>';
-            if (!isTorbox) {
-              html += '    <button class="btn btn-success" onclick="uploadLinkToTorbox(\\'' + escapeHtml(s.url) + '\\')">⚡ Cache to TorBox</button>';
-            }
-            html += '  </div>';
-            html += '</div>';
-          }
-          resultsDiv.innerHTML = html;
+          renderFilteredStreams('all');
         }
       } catch (err) {
         resultsDiv.innerHTML = '<div style="color:#f85149; padding:10px;">Error testing scrape: ' + err + '</div>';
@@ -618,6 +815,113 @@ class WebUI {
         btn.disabled = false;
         btn.innerText = '🚀 Test Scrape';
       }
+    }
+
+    function renderFilteredStreams(filter) {
+      activeFilter = filter;
+      const resultsDiv = document.getElementById('testResults');
+
+      const count4K = currentStreams.filter(s => s.is4K).length;
+      const count1080p = currentStreams.filter(s => s.is1080p).length;
+      const countCached = currentStreams.filter(s => s.isCached).length;
+      const countCache = currentStreams.filter(s => s.isCache).length;
+      const countDirect = currentStreams.filter(s => !s.isCached && !s.isCache).length;
+
+      let filtered = currentStreams;
+      if (filter === '4k') filtered = currentStreams.filter(s => s.is4K);
+      else if (filter === '1080p') filtered = currentStreams.filter(s => s.is1080p);
+      else if (filter === 'cached') filtered = currentStreams.filter(s => s.isCached);
+      else if (filter === 'cache') filtered = currentStreams.filter(s => s.isCache);
+      else if (filter === 'direct') filtered = currentStreams.filter(s => !s.isCached && !s.isCache);
+
+      let html = `
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px;">
+          <div style="font-weight:600; color:var(--green); font-size:1rem;">Found \${currentStreams.length} stream(s):</div>
+          <div class="stream-filter-bar">
+            <span class="stream-filter-chip \${filter === 'all' ? 'active' : ''}" onclick="renderFilteredStreams('all')">All (\${currentStreams.length})</span>
+            <span class="stream-filter-chip \${filter === '4k' ? 'active' : ''}" onclick="renderFilteredStreams('4k')">4K UHD (\${count4K})</span>
+            <span class="stream-filter-chip \${filter === '1080p' ? 'active' : ''}" onclick="renderFilteredStreams('1080p')">1080p FHD (\${count1080p})</span>
+            <span class="stream-filter-chip \${filter === 'cached' ? 'active' : ''}" onclick="renderFilteredStreams('cached')">⚡ Cached (\${countCached})</span>
+            <span class="stream-filter-chip \${filter === 'cache' ? 'active' : ''}" onclick="renderFilteredStreams('cache')">⚡ Cache (\${countCache})</span>
+            <span class="stream-filter-chip \${filter === 'direct' ? 'active' : ''}" onclick="renderFilteredStreams('direct')">🌐 Direct (\${countDirect})</span>
+          </div>
+        </div>
+      `;
+
+      for (let i = 0; i < filtered.length; i++) {
+        const s = filtered[i];
+        const isTorbox = s.url.includes('/torbox/play') || s.title.includes('Torbox') || s.title.includes('Cached');
+        html += '<div class="stream-item">';
+        html += '  <div class="stream-info">';
+        html += '    <div class="stream-title">' + escapeHtml(s.name) + '</div>';
+        html += '    <div class="stream-sub">' + escapeHtml(s.title) + '</div>';
+        html += '  </div>';
+        html += '  <div class="stream-actions">';
+        html += '    <button class="btn btn-play" onclick="openPlayerModal(' + s.index + ')">▶️ Play Stream</button>';
+        html += '    <button class="btn btn-primary" onclick="copyStreamUrl(' + s.index + ')">📋 Copy URL</button>';
+        html += '    <a class="btn" href="' + s.url + '" target="_blank" rel="noreferrer">🔗 Open URL</a>';
+        if (!isTorbox) {
+          html += '    <button class="btn btn-success" onclick="uploadLinkToTorbox(\\'' + escapeHtml(s.url) + '\\')">⚡ Cache to TorBox</button>';
+        }
+        html += '  </div>';
+        html += '</div>';
+      }
+
+      resultsDiv.innerHTML = html;
+    }
+
+    function openPlayerModal(idx) {
+      const s = currentStreams[idx];
+      if (!s || !s.url) return;
+
+      const modal = document.getElementById('playerModal');
+      const title = document.getElementById('playerStreamTitle');
+      const video = document.getElementById('previewVideoPlayer');
+
+      title.innerText = s.name + ' - ' + s.title.split('\\n')[0];
+      modal.style.display = 'flex';
+
+      if (currentHls) {
+        currentHls.destroy();
+        currentHls = null;
+      }
+
+      const streamUrl = s.url;
+      const isHls = streamUrl.includes('.m3u8') || streamUrl.includes('/proxy');
+
+      if (isHls && Hls.isSupported()) {
+        currentHls = new Hls({
+          enableWorker: true,
+          lowLatencyMode: true,
+        });
+        currentHls.loadSource(streamUrl);
+        currentHls.attachMedia(video);
+        currentHls.on(Hls.Events.MANIFEST_PARSED, function() {
+          video.play().catch(() => {});
+        });
+        currentHls.on(Hls.Events.ERROR, function(event, data) {
+          if (data.fatal) {
+            video.src = streamUrl;
+            video.play().catch(() => {});
+          }
+        });
+      } else {
+        video.src = streamUrl;
+        video.play().catch(() => {});
+      }
+    }
+
+    function closePlayerModal(e) {
+      const modal = document.getElementById('playerModal');
+      const video = document.getElementById('previewVideoPlayer');
+      video.pause();
+      if (currentHls) {
+        currentHls.destroy();
+        currentHls = null;
+      }
+      video.removeAttribute('src');
+      video.load();
+      modal.style.display = 'none';
     }
 
     function escapeHtml(str) {
@@ -660,6 +964,13 @@ class WebUI {
       const key = document.getElementById('torboxApiKey').value.trim();
       if (key) {
         saveTorboxKey();
+      }
+    });
+
+    // Handle ESC key to close player modal
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closePlayerModal();
       }
     });
   </script>
