@@ -39,16 +39,17 @@ A high-performance local Stremio & Nuvio-compatible addon server featuring **56 
 
 **sakinator-MegaScraper works 100% out of the box with zero required API keys.** All external keys are strictly optional personal enhancements:
 
-| Integration | Key Requirement | Zero-Key Public Fallback | What You Get |
-|---|---|---|---|
-| **Direct Cloud Scrapers** | ❌ **No Key Needed** | 56 Direct HTTP/HLS Hosters | High-speed cloud streaming from HubCloud, Vadapav, VidLink, Movy, etc. |
-| **ClearLogos & 4K Artwork** | 🟢 **Optional** (`fanartApiKey`) | **Metahub CDN** (`images.metahub.space`) | Transparent PNG ClearLogos & 4K hero backgrounds without any account. |
-| **Live Ratings & Tomatometer** | 🟢 **Optional** (`omdbApiKey`) | **Cinemeta Ratings** (`v3-cinemeta.strem.io`) | Pre-configured key + Cinemeta fallback for ⭐ IMDb, 🍅 RT%, and Ⓜ️ Metascore. |
-| **Anime & Episode Mappings** | 🟢 **Optional** (`tvdbApiKey`) | **Cinemeta & TVMaze** (`api.tvmaze.com`) | Absolute episode counting (`EP 1089`) and episode title aliases. |
-| **TorBox Debrid** | 🟢 **Optional** (`torboxApiKey`) | **Direct Cloud Stream Playback** | If blank, direct cloud links play immediately with zero warnings. |
-| **TMDB Metadata** | 🟢 **Optional** (`tmdbApiKey`) | **TMDB Proxy & Cinemeta** | Speedracelight proxy & Cinemeta ensure queries succeed worldwide. |
+| Integration | Key Requirement | 1-Click Signup Link | Zero-Key Public Fallback | What You Get |
+|---|---|---|---|---|
+| **Direct Cloud Scrapers** | ❌ **No Key Needed** | *Built-in* | 56 Direct HTTP/HLS Hosters | High-speed cloud streaming from HubCloud, Vadapav, VidLink, Movy, etc. |
+| **ClearLogos & 4K Artwork** | 🟢 **Optional** (`fanartApiKey`) | [Get Fanart Key ↗](https://fanart.tv/get-an-api-key/) | **Metahub CDN** (`images.metahub.space`) | Transparent PNG ClearLogos & 4K hero backgrounds without any account. |
+| **Live Ratings & Tomatometer** | 🟢 **Optional** (`omdbApiKey`) | [Get Free OMDb Key ↗](https://www.omdbapi.com/apikey.aspx) | **Cinemeta Ratings** (`v3-cinemeta.strem.io`) | Pre-configured key + Cinemeta fallback for ⭐ IMDb, 🍅 RT%, and Ⓜ️ Metascore. |
+| **Anime & Episode Mappings** | 🟢 **Optional** (`tvdbApiKey`) | [Get TheTVDB Key ↗](https://thetvdb.com/dashboard/account/apikeys) | **Cinemeta & TVMaze** (`api.tvmaze.com`) | Absolute episode counting (`EP 1089`) and episode title aliases. |
+| **TorBox Debrid** | 🟢 **Optional** (`torboxApiKey`) | [Get TorBox Key ↗](https://torbox.app/settings) | **Direct Cloud Stream Playback** | If blank, direct cloud links play immediately with zero warnings. |
+| **TMDB Metadata** | 🟢 **Optional** (`tmdbApiKey`) | [Get TMDB Key ↗](https://www.themoviedb.org/settings/api) | **TMDB Proxy & Cinemeta** | Speedracelight proxy & Cinemeta ensure queries succeed worldwide. |
 
-All settings can be customized at runtime via `http://localhost:7002/configure` or edited in `data/config.json`.
+### 🔍 Live Instant Key Validation (`/api/keys/validate`)
+The Web Dashboard (`http://localhost:7002/configure`) features inline **🔍 Test Key** buttons for every service. It verifies your API credentials in real time against upstream APIs before saving, returning instant status feedback (`✅ Valid`, `❌ Invalid`, or `⚪ Fallback Active`).
 
 ---
 

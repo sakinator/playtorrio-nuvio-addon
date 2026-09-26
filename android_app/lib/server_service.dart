@@ -11,6 +11,7 @@ import 'web_ui.dart';
 import 'catalog_service.dart';
 import 'torbox_service.dart';
 import 'doh_resolver.dart';
+import 'key_validator.dart';
 
 class ServerService {
   static final ServerService instance = ServerService._();
@@ -493,9 +494,25 @@ class ServerService {
         if (bodyJson.containsKey('tvdbApiKey')) {
           AddonConfig.instance.tvdbApiKey = bodyJson['tvdbApiKey'].toString().trim();
         }
+        if (bodyJson.containsKey('tmdbApiKey')) {
+          AddonConfig.instance.tmdbApiKey = bodyJson['tmdbApiKey'].toString().trim();
+        }
         await AddonConfig.instance.save();
         request.response.headers.contentType = ContentType.json;
         request.response.write(jsonEncode({'success': true}));
+        await request.response.close();
+        return;
+      }
+
+      // 5f. API: Validate Key: POST /api/keys/validate
+      if (path == '/api/keys/validate' && method == 'POST') {
+        final bodyStr = await utf8.decodeStream(request);
+        final bodyJson = jsonDecode(bodyStr) as Map;
+        final service = bodyJson['service']?.toString() ?? '';
+        final key = bodyJson['key']?.toString() ?? '';
+        final result = await KeyValidator.validate(service, key);
+        request.response.headers.contentType = ContentType.json;
+        request.response.write(jsonEncode(result.toJson()));
         await request.response.close();
         return;
       }

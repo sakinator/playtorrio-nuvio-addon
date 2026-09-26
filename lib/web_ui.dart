@@ -16,6 +16,7 @@ class WebUI {
     final omdbApiKey = cfg.omdbApiKey;
     final fanartApiKey = cfg.fanartApiKey;
     final tvdbApiKey = cfg.tvdbApiKey;
+    final tmdbApiKey = cfg.tmdbApiKey;
     final showRatingsChecked = cfg.showRatingsInStreams ? 'checked' : '';
     final excludeCamsChecked = cfg.excludeCams ? 'checked' : '';
     final dedupeChecked = cfg.enableDeduplication ? 'checked' : '';
@@ -478,6 +479,7 @@ class WebUI {
           <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility()" title="Show/Hide Key">👁️</button>
         </div>
         <button class="btn btn-primary" id="btnSaveTorbox" onclick="saveTorboxKey()">💾 Save & Validate</button>
+        <a href="https://torbox.app/settings" target="_blank" class="btn" style="text-decoration:none; display:inline-flex; align-items:center; gap:4px;" title="Open TorBox Account Settings">🔗 Get TorBox Key ↗</a>
       </div>
       <div id="torboxAccountInfo" style="font-size:0.88rem; color:var(--text-muted); margin-bottom:14px; display:none;"></div>
 
@@ -594,22 +596,68 @@ class WebUI {
       </p>
 
       <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:16px;">
-        <div style="background:#090d13; border:1px solid var(--border); border-radius:8px; padding:14px;">
-          <label style="font-weight:600; display:block; margin-bottom:6px;">⭐ OMDb API Key <span style="font-weight:normal; font-size:0.8rem; color:#3fb950;">(Optional)</span>:</label>
-          <input type="text" id="omdbApiKey" value="$omdbApiKey" placeholder="Pre-configured fallback key active" style="width:100%; padding:8px; background:#161b22; border:1px solid var(--border); border-radius:6px; color:var(--text); font-size:0.88rem;">
-          <div style="color:var(--text-muted); font-size:0.78rem; margin-top:6px;">Supplies live IMDb ratings, RT tomatometer, and Metacritic scores. Falls back to Cinemeta ratings if empty.</div>
+        <!-- OMDb API Key -->
+        <div style="background:#090d13; border:1px solid var(--border); border-radius:8px; padding:14px; display:flex; flex-direction:column; justify-content:space-between; gap:10px;">
+          <div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+              <label style="font-weight:600;">⭐ OMDb API Key <span style="font-weight:normal; font-size:0.8rem; color:#3fb950;">(Optional)</span>:</label>
+              <a href="https://www.omdbapi.com/apikey.aspx" target="_blank" style="color:var(--blue); font-size:0.8rem; text-decoration:none; font-weight:600;">🔗 Get Free Key ↗</a>
+            </div>
+            <input type="text" id="omdbApiKey" value="$omdbApiKey" placeholder="Pre-configured fallback key active" style="width:100%; padding:8px; background:#161b22; border:1px solid var(--border); border-radius:6px; color:var(--text); font-size:0.88rem;">
+            <div style="color:var(--text-muted); font-size:0.78rem; margin-top:6px;">Instant 1-min free signup for live IMDb ratings, RT tomatometer, and Metascores. Falls back to Cinemeta if empty.</div>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--border); padding-top:8px;">
+            <button class="btn" style="padding:4px 10px; font-size:0.8rem;" onclick="testKey('omdb', 'omdbApiKey', 'omdbBadge')">🔍 Test Key</button>
+            <span id="omdbBadge" class="badge" style="background:#21262d; font-size:0.75rem;">Ready</span>
+          </div>
         </div>
 
-        <div style="background:#090d13; border:1px solid var(--border); border-radius:8px; padding:14px;">
-          <label style="font-weight:600; display:block; margin-bottom:6px;">✨ Fanart.tv API Key <span style="font-weight:normal; font-size:0.8rem; color:#3fb950;">(Optional)</span>:</label>
-          <input type="text" id="fanartApiKey" value="$fanartApiKey" placeholder="Leave empty for Metahub ClearLogos" style="width:100%; padding:8px; background:#161b22; border:1px solid var(--border); border-radius:6px; color:var(--text); font-size:0.88rem;">
-          <div style="color:var(--text-muted); font-size:0.78rem; margin-top:6px;">Renders transparent PNG ClearLogos and 4K backdrops. Automatically falls back to Metahub CDN with zero keys.</div>
+        <!-- Fanart.tv API Key -->
+        <div style="background:#090d13; border:1px solid var(--border); border-radius:8px; padding:14px; display:flex; flex-direction:column; justify-content:space-between; gap:10px;">
+          <div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+              <label style="font-weight:600;">✨ Fanart.tv Key <span style="font-weight:normal; font-size:0.8rem; color:#3fb950;">(Optional)</span>:</label>
+              <a href="https://fanart.tv/get-an-api-key/" target="_blank" style="color:var(--blue); font-size:0.8rem; text-decoration:none; font-weight:600;">🔗 Get Key ↗</a>
+            </div>
+            <input type="text" id="fanartApiKey" value="$fanartApiKey" placeholder="Leave empty for Metahub ClearLogos" style="width:100%; padding:8px; background:#161b22; border:1px solid var(--border); border-radius:6px; color:var(--text); font-size:0.88rem;">
+            <div style="color:var(--text-muted); font-size:0.78rem; margin-top:6px;">Transparent PNG ClearLogos & 4K backdrops for Nuvio. Automatically falls back to Metahub CDN with zero keys.</div>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--border); padding-top:8px;">
+            <button class="btn" style="padding:4px 10px; font-size:0.8rem;" onclick="testKey('fanart', 'fanartApiKey', 'fanartBadge')">🔍 Test Key</button>
+            <span id="fanartBadge" class="badge" style="background:#21262d; font-size:0.75rem;">Ready</span>
+          </div>
         </div>
 
-        <div style="background:#090d13; border:1px solid var(--border); border-radius:8px; padding:14px;">
-          <label style="font-weight:600; display:block; margin-bottom:6px;">📺 TheTVDB API Key <span style="font-weight:normal; font-size:0.8rem; color:#3fb950;">(Optional)</span>:</label>
-          <input type="text" id="tvdbApiKey" value="$tvdbApiKey" placeholder="Leave empty for Cinemeta & TVMaze" style="width:100%; padding:8px; background:#161b22; border:1px solid var(--border); border-radius:6px; color:var(--text); font-size:0.88rem;">
-          <div style="color:var(--text-muted); font-size:0.78rem; margin-top:6px;">Maps absolute episode numbers and titles. Automatically falls back to Cinemeta & TVMaze with zero keys.</div>
+        <!-- TheTVDB API Key -->
+        <div style="background:#090d13; border:1px solid var(--border); border-radius:8px; padding:14px; display:flex; flex-direction:column; justify-content:space-between; gap:10px;">
+          <div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+              <label style="font-weight:600;">📺 TheTVDB Key <span style="font-weight:normal; font-size:0.8rem; color:#3fb950;">(Optional)</span>:</label>
+              <a href="https://thetvdb.com/dashboard/account/apikeys" target="_blank" style="color:var(--blue); font-size:0.8rem; text-decoration:none; font-weight:600;">🔗 Get Key ↗</a>
+            </div>
+            <input type="text" id="tvdbApiKey" value="$tvdbApiKey" placeholder="Leave empty for Cinemeta & TVMaze" style="width:100%; padding:8px; background:#161b22; border:1px solid var(--border); border-radius:6px; color:var(--text); font-size:0.88rem;">
+            <div style="color:var(--text-muted); font-size:0.78rem; margin-top:6px;">Maps absolute anime episode numbers & titles. Automatically falls back to Cinemeta & TVMaze with zero keys.</div>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--border); padding-top:8px;">
+            <button class="btn" style="padding:4px 10px; font-size:0.8rem;" onclick="testKey('tvdb', 'tvdbApiKey', 'tvdbBadge')">🔍 Test Key</button>
+            <span id="tvdbBadge" class="badge" style="background:#21262d; font-size:0.75rem;">Ready</span>
+          </div>
+        </div>
+
+        <!-- TMDB API Key -->
+        <div style="background:#090d13; border:1px solid var(--border); border-radius:8px; padding:14px; display:flex; flex-direction:column; justify-content:space-between; gap:10px;">
+          <div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+              <label style="font-weight:600;">🎬 TMDB Key <span style="font-weight:normal; font-size:0.8rem; color:#3fb950;">(Optional)</span>:</label>
+              <a href="https://www.themoviedb.org/settings/api" target="_blank" style="color:var(--blue); font-size:0.8rem; text-decoration:none; font-weight:600;">🔗 Get Key ↗</a>
+            </div>
+            <input type="text" id="tmdbApiKey" value="$tmdbApiKey" placeholder="Pre-configured fallback key active" style="width:100%; padding:8px; background:#161b22; border:1px solid var(--border); border-radius:6px; color:var(--text); font-size:0.88rem;">
+            <div style="color:var(--text-muted); font-size:0.78rem; margin-top:6px;">Custom TMDB searches. Automatically falls back to Speedracelight proxy and Cinemeta with zero keys.</div>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--border); padding-top:8px;">
+            <button class="btn" style="padding:4px 10px; font-size:0.8rem;" onclick="testKey('tmdb', 'tmdbApiKey', 'tmdbBadge')">🔍 Test Key</button>
+            <span id="tmdbBadge" class="badge" style="background:#21262d; font-size:0.75rem;">Ready</span>
+          </div>
         </div>
       </div>
     </div>
@@ -816,6 +864,7 @@ class WebUI {
             omdbApiKey: document.getElementById('omdbApiKey').value.trim(),
             fanartApiKey: document.getElementById('fanartApiKey').value.trim(),
             tvdbApiKey: document.getElementById('tvdbApiKey').value.trim(),
+            tmdbApiKey: document.getElementById('tmdbApiKey') ? document.getElementById('tmdbApiKey').value.trim() : '',
           })
         });
         const data = await res.json();
@@ -829,6 +878,41 @@ class WebUI {
       } finally {
         btn.disabled = false;
         btn.innerText = '💾 Save Settings';
+      }
+    }
+
+    async function testKey(service, inputId, badgeId) {
+      const input = document.getElementById(inputId);
+      const badge = document.getElementById(badgeId);
+      const key = input ? input.value.trim() : '';
+
+      badge.innerText = 'Testing...';
+      badge.style.background = '#21262d';
+      badge.style.color = '#fff';
+
+      try {
+        const res = await fetch('/api/keys/validate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ service: service, key: key })
+        });
+        const data = await res.json();
+        if (data.valid) {
+          badge.innerText = '✅ Valid';
+          badge.style.background = 'rgba(35, 134, 54, 0.3)';
+          badge.style.color = '#3fb950';
+          showToast('✅ ' + data.message);
+        } else {
+          badge.innerText = '❌ Invalid';
+          badge.style.background = 'rgba(248, 81, 73, 0.3)';
+          badge.style.color = '#f85149';
+          showToast('❌ ' + data.message);
+        }
+      } catch (err) {
+        badge.innerText = '⚠️ Error';
+        badge.style.background = 'rgba(210, 153, 34, 0.3)';
+        badge.style.color = '#d29922';
+        showToast('Validation request failed: ' + err);
       }
     }
 

@@ -8,6 +8,7 @@ import 'package:playtorrio_nuvio_addon/web_ui.dart';
 import 'package:playtorrio_nuvio_addon/catalog_service.dart';
 import 'package:playtorrio_nuvio_addon/torbox_service.dart';
 import 'package:playtorrio_nuvio_addon/doh_resolver.dart';
+import 'package:playtorrio_nuvio_addon/key_validator.dart';
 
 void main(List<String> args) async {
   // ── Global DNS-over-HTTPS (DoH) & Pre-Warming ─────────────────────────────
@@ -386,9 +387,25 @@ Future<void> _handleRequest(HttpRequest request, String lanIp, int port) async {
       if (bodyJson.containsKey('tvdbApiKey')) {
         AddonConfig.instance.tvdbApiKey = bodyJson['tvdbApiKey'].toString().trim();
       }
+      if (bodyJson.containsKey('tmdbApiKey')) {
+        AddonConfig.instance.tmdbApiKey = bodyJson['tmdbApiKey'].toString().trim();
+      }
       await AddonConfig.instance.save();
       request.response.headers.contentType = ContentType.json;
       request.response.write(jsonEncode({'success': true}));
+      await request.response.close();
+      return;
+    }
+
+    // ── 5f. API: Validate Key: POST /api/keys/validate ────────────────────
+    if (path == '/api/keys/validate' && method == 'POST') {
+      final bodyStr = await utf8.decodeStream(request);
+      final bodyJson = jsonDecode(bodyStr) as Map;
+      final service = bodyJson['service']?.toString() ?? '';
+      final key = bodyJson['key']?.toString() ?? '';
+      final result = await KeyValidator.validate(service, key);
+      request.response.headers.contentType = ContentType.json;
+      request.response.write(jsonEncode(result.toJson()));
       await request.response.close();
       return;
     }
