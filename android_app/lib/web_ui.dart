@@ -708,6 +708,11 @@ class WebUI {
       </div>
       <div id="updateStatus" style="margin-top:12px; font-family:monospace; font-size:0.85rem; display:none;"></div>
     </div>
+
+    <!-- Legal Disclaimer Footer -->
+    <div style="text-align:center; padding:24px 14px 10px; color:var(--text-muted); font-size:0.8rem; border-top:1px solid var(--border); margin-top:24px; line-height:1.6;">
+      <strong>⚖️ Legal Disclaimer:</strong> The author does not own, host, upload, or broadcast any of the media, videos, or streams displayed. sakinator-MegaScraper acts solely as a search indexer aggregating publicly available hyperlinks from third-party websites on the internet. All media is hosted by independent third-party services.
+    </div>
   </div>
 
   <!-- Inline Stream Player Modal -->

@@ -235,3 +235,16 @@ sakinator-MegaScraper/
 - **[CNCVerse-Bridge](https://github.com/CNCVerse/Bridge)**: Design inspiration for DNS-over-HTTPS fallback, segment caching, and on-the-fly virtual HLS playlist converter.
 - **[Torrentio](https://torrentio.strem.fun)**, **[MediaFusion](https://github.com/mhdzumair/MediaFusion)**, **[Comet](https://github.com/g0ldy/comet)**, **[AIOStreams](https://github.com/Viren070/AIOStreams)** & **[EasyTorbox](https://github.com/sagetendo/EasyTorbox)**: For shaping modern community debrid streaming workflows and Stremio/Nuvio addon conventions.
 
+---
+
+## ⚖️ Legal Disclaimer & DMCA Policy
+
+> [!IMPORTANT]
+> **sakinator-MegaScraper does not host, upload, archive, broadcast, or own any media, video files, audio streams, or torrent data on any servers or infrastructure.**
+
+1. **Pure Indexer & Search Tool**: This software functions strictly as an automated web-scraping and indexing utility. It searches for and aggregates hyperlinks that are already publicly available, crawled, or indexed on public third-party websites across the internet.
+2. **Zero Media Ownership**: The authors, developers, and maintainers of this project do not own, control, maintain, or manage any of the scraped websites, hosters, content delivery networks (CDNs), or debrid providers indexed by this tool.
+3. **No File Hosting**: No copyrighted or proprietary media files are stored on, transmitted through, or distributed from this repository or any servers operated by the project.
+4. **Educational & Personal Research**: This software is provided exclusively for personal research and educational purposes to demonstrate web-scraping techniques, HLS proxy architecture, and local media cataloging.
+5. **DMCA & Copyright Takedowns**: Because this application does not host or store any content, takedown notices and copyright removal requests should be directed to the third-party web host or file-sharing service actually hosting the media files. Once a file is removed from the host source, it will automatically no longer appear in search results.
+
