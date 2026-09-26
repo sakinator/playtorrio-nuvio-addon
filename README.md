@@ -159,54 +159,75 @@ sakinator-MegaScraper/
 
 ## 🛠️ List of Active Scrapers (56 Total)
 
-| Scraper Provider | ID | Description |
-| :--- | :--- | :--- |
-| **4KHDHub** | `fourkhdhub` | 4K UHD & HD direct cloud and hoster links |
-| **Vadapav** | `vadapav` | Direct high-speed media storage |
-| **HindMoviez** | `hindmoviez` | Bollywood, Hindi Dual-Audio & Hollywood |
-| **RiveStream** | `rivestream` | Multi-server high bitrate streams & 4K |
-| **LookMovie** | `lookmovie` | Multi-quality direct streams |
-| **VidLink** | `vidlink` | Fast multi-CDN direct streams |
-| **Movy** | `movy` | Encrypted MP4/HLS direct streams |
-| **Videasy** | `videasy` | Multi-CDN encrypted HLS scraper |
-| **Cinejoy** | `cinejoy` | Multi-CDN video streams |
-| **FlyStream** | `flystream` | Ultra-fast HLS streaming network |
-| **XDownloader** | `xdownloader` | Multi-source stream extractor |
-| **VidSrc** | `vidsrc` | Direct streaming resolver |
-| **MultiEmbed** | `multiembed` | 2Embed multi-host aggregator |
-| **VidCore** | `vidcore` | Multi-source HD video extractor |
-| **MovieNight** | `movienight` | Multi-server HLS streams |
-| **DownloadEverything** | `downloadeverything` | Direct media download & stream extractor |
-| **Vuflix** | `vuflix` | Fast cloud HLS stream resolver |
-| **Dulo** | `dulo` | High-speed direct stream network |
-| **VidUp** | `vidup` | Cloud video hosting scraper |
-| **FlaxMovies** | `flaxmovies` | Multi-CDN direct streams |
-| **VidGod** | `vidgod` | Multi-server cloud video streams |
-| **VidFast** | `vidfast` | Low-latency direct streaming provider |
-| **PeeStream** | `peestream` | Fast cloud video source provider |
-| **Hexa** | `hexa` | Multi-host video extractor |
-| **Bcine** | `bcine` | Direct master HLS provider |
-| **Mapple** | `mapple` | Fast streaming provider |
-| **Nova** | `nova` | Multi-server stream extractor |
-| **MegaSource** | `megasource` | Multi-CDN video network |
-| **Purstream** | `purstream` | Direct video stream resolver |
-| **VidApi** | `vidapi` | Direct video source extractor |
-| **VidRock** | `vidrock` | Cloud video provider |
-| **VidVault** | `vidvault` | Secure streaming network |
-| **VidZee** | `vidzee` | High-speed video provider |
-| **CineSrc** | `cinesrc` | Direct master HLS streams |
-| **CineSu** | `cinesu` | Direct video stream extractor |
-| **Frame** | `frame` | Multi-resolution stream provider |
-| **FshareTV** | `fsharetv` | Cloud streaming network |
-| **FSonic** | `fsonic` | Direct cloud video scraper |
-| **FSOnline** | `fsonline` | Multi-host stream resolver |
-| **KissKH** | `kisskh` | Asian drama & anime provider |
-| **LMScript** | `lmscript` | Video source extractor |
-| **MeowTV** | `meowtv` | Direct streaming network |
-| **VixSrc** | `vixsrc` | Master streaming extractor |
-| **XPass** | `xpass` | Multi-server video scraper |
-| **ZxcStream** | `zxcstream` | Multi-source direct provider |
-| *And 10 additional cloud scrapers* | ... | Continuous updates via upstream pipeline |
+The unified scraper engine integrates 56 non-torrent cloud providers across Indian Regional, Anime/Asian, and Global networks:
+
+### 🇮🇳 Indian OTT & Regional Scrapers (8 Providers)
+| Scraper Provider | ID | Stream Quality | Technology / Hosters | Focus / Description |
+| :--- | :--- | :--- | :--- | :--- |
+| **Vegamovies** | `vegamovies` | 💎 4K UHD / 1080p | ☁️ Cloud Extractors (HubCloud, V-Cloud) | Bollywood, South Hindi Dubs, HEVC multi-audio releases |
+| **Bollyflix** | `bollyflix` | 💎 4K UHD / 1080p | ☁️ Cloud Extractors (DriveSeed, HubCloud) | High-bitrate Bollywood, Hollywood dubbed, multi-audio |
+| **HDHub4u** | `hdhub4u` | 💎 4K UHD / 1080p | ☁️ Cloud Extractors (HubCloud, DriveBot) | Latest Hindi cinema, South dubs, direct mirrors |
+| **4KHDHub** | `fourkhdhub` | 💎 Pure 4K UHD / Remux | ☁️ Cloud Extractors (HubCloud, Pixeldrain) | Dedicated 2160p 4K UHD Remux, HDR10+ regional copies |
+| **HindMoviez** | `hindmoviez` | 📺 1080p FHD | ⚡ Fast HLS / Direct CDN | Bollywood, South Indian dubbed & regional cinema |
+| **PlayDesi** | `playdesi` | 📺 1080p FHD | 🎬 Direct MP4 / Cloud Player | Indian TV serials, daily soaps, reality shows & Desi web series |
+| **YoMovies** | `yomovies` | 📺 1080p FHD | ⚡ Fast HLS Streams | Hindi, Punjabi, Tamil, Telugu, and Bengali cinema |
+| **Vadapav** | `vadapav` | 📺 1080p FHD | 🌐 Direct HTTP CDN | Zero-lag Indian high-speed direct CDN file storage |
+
+### ⛩️ Anime & Asian Drama Scrapers (6 Providers)
+| Scraper Provider | ID | Stream Quality | Technology / Hosters | Focus / Description |
+| :--- | :--- | :--- | :--- | :--- |
+| **AnimePahe** | `animepahe` | 📺 1080p / 720p | ⚡ Fast HLS / Kwk CDN | Sub/Dub anime with multi-bitrate streams & soft subtitles |
+| **Gogoanime** | `gogoanime` | 📺 1080p FHD | ⚡ Fast HLS Streams | Simulcast seasonal anime, massive catalog & dual audio |
+| **HiAnime** | `hianime` | 📺 1080p FHD | ⚡ Fast HLS / Megacloud | HiAnime CDN, multi-quality streams & soft subtitles |
+| **KissKH** | `kisskh` | 📺 1080p FHD | ⚡ Fast HLS Streams | K-Drama, C-Drama & Asian series with multi-language subs |
+| **KissAsian** | `kissasian` | 📺 720p / 1080p | ⚡ Fast HLS Streams | Korean & Asian drama catalog with high-speed playback |
+| **DramaCool** | `dramacool` | 📺 720p / 1080p | 🎬 Direct MP4 / HLS | Asian dramas, variety shows & East Asian television |
+
+### 🌐 Global & International Scrapers (42 Providers)
+| Scraper Provider | ID | Stream Quality | Technology / Hosters | Focus / Description |
+| :--- | :--- | :--- | :--- | :--- |
+| **VidSrc** | `vidsrc` | 📺 1080p FHD | ⚡ Fast HLS / Multi-Server | Flagship global streaming cluster with adaptive HLS |
+| **LookMovie** | `lookmovie` | 📺 1080p FHD | ⚡ Fast HLS Streams | Premium global cinema & television series with soft subs |
+| **VidLink** | `vidlink` | 📺 1080p FHD | ⚡ Fast HLS / Cloud CDN | Ultra-fast global CDN streaming network with multi-language subs |
+| **MultiEmbed** | `multiembed` | 📺 1080p FHD | ⚡ Fast HLS Aggregator | Aggregated multi-source embed fallback player and resolver |
+| **RiveStream** | `rivestream` | 💎 4K / 1080p FHD | ⚡ Fast HLS / Multi-CDN | Multi-server high-bitrate streaming network |
+| **Hexa** | `hexa` | 📺 1080p FHD | ⚡ Fast HLS Streams | Multi-server mirror cluster with adaptive bitrate streaming |
+| **MegaSource** | `megasource` | 📺 1080p FHD | ☁️ Cloud Extractors | Multi-cloud direct stream aggregator and link resolver |
+| **Movy** | `movy` | 📺 1080p FHD | ⚡ Fast HLS / MP4 | Encrypted HLS & MP4 direct streams for movies and series |
+| **Videasy** | `videasy` | 📺 1080p FHD | ⚡ Fast HLS Streams | One-click fast buffer global streams across multi-CDN mirrors |
+| **Cinejoy** | `cinejoy` | 📺 1080p FHD | ⚡ Fast HLS Streams | International entertainment streams & reliable mirror sources |
+| **FlyStream** | `flystream` | 📺 1080p FHD | ⚡ Fast HLS Streams | Low-latency adaptive bitrate streaming network |
+| **XDownloader** | `xdownloader` | 📺 1080p FHD | 🌐 Direct HTTP Extractor | Direct file hoster link generator & stream extractor |
+| **Vuflix** | `vuflix` | 📺 1080p FHD | ⚡ Fast HLS Streams | Fast cloud HLS stream resolver for international catalog |
+| **MovieNight** | `movienight` | 📺 1080p FHD | 🎬 Direct MP4 Streams | Nightly movie archive & high-speed direct streams |
+| **FSOnline** | `fsonline` | 📺 1080p FHD | ⚡ Fast HLS Streams | Worldwide movie & webseries provider with multi-quality mirrors |
+| **CineSrc** | `cinesrc` | 📺 1080p FHD | 🎬 Direct MP4 / HLS | Direct master HLS & web embeds for movies and series |
+| **CineSu** | `cinesu` | 📺 1080p FHD | ⚡ Fast HLS Streams | International film releases and episodic television streams |
+| **VidFast** | `vidfast` | 📺 1080p FHD | ⚡ Fast HLS Streams | Optimized low-latency streaming endpoints |
+| **VidGod** | `vidgod` | 📺 1080p FHD | ⚡ Fast HLS Streams | Resilient global streaming fallback with fast seek times |
+| **VidRock** | `vidrock` | 📺 1080p FHD | ⚡ Fast HLS Streams | Rock-solid CDN streams with multiple quality options |
+| **VidUp** | `vidup` | 📺 1080p FHD | ⚡ Fast HLS Streams | Direct video upload player scraper & mirror resolver |
+| **VidVault** | `vidvault` | 📺 1080p FHD | 🎬 Direct MP4 Streams | Archived movies & television vault with high retention |
+| **VidZee** | `vidzee` | 📺 1080p FHD | ⚡ Fast HLS Streams | Lightning-fast multi-server global player |
+| **VixSrc** | `vixsrc` | 📺 1080p FHD | ⚡ Fast HLS Streams | High-performance Vix stream mirror with fast buffering |
+| **Purstream** | `purstream` | 📺 1080p FHD | ⚡ Fast HLS Streams | Clean uninterrupted international streams |
+| **Nova** | `nova` | 📺 1080p FHD | ⚡ Fast HLS Streams | Global release cluster with multiple server mirrors |
+| **FlaxMovies** | `flaxmovies` | 📺 1080p FHD | ⚡ Fast HLS Streams | Global movie releases & web streaming endpoints |
+| **Bcine** | `bcine` | 📺 1080p FHD | 🎬 Direct MP4 Streams | Direct international cinema catalog with MP4 streams |
+| **Frame** | `frame` | 📺 1080p FHD | ⚡ Fast HLS Streams | High-efficiency adaptive video streams |
+| **FshareTV** | `fsharetv` | 📺 1080p FHD | ⚡ Fast HLS Streams | Global TV network episodes & television serials |
+| **FSonic** | `fsonic` | 📺 1080p FHD | 🎬 Direct MP4 Streams | Ultra-fast international CDN streams |
+| **LMScript** | `lmscript` | 📺 1080p FHD | ⚡ Fast HLS Streams | Script-based lookmovie alternative mirror |
+| **Mapple** | `mapple` | 📺 1080p FHD | ⚡ Fast HLS Streams | Fresh global box office & TV episodes |
+| **MeowTV** | `meowtv` | 📺 1080p FHD | ⚡ Fast HLS Streams | Curated television shows & movies |
+| **PeeStream** | `peestream` | 📺 1080p FHD | 🎬 Direct MP4 Streams | Direct streaming hoster scraper |
+| **VidApi** | `vidapi` | 📺 1080p FHD | ⚡ Fast HLS Streams | API-driven media scraper endpoint |
+| **VidCore** | `vidcore` | 📺 1080p FHD | ⚡ Fast HLS Streams | Core video streaming cluster for global releases |
+| **XPass** | `xpass` | 📺 1080p FHD | ⚡ Fast HLS Streams | Bypass scraper for premium media mirrors |
+| **ZxcStream** | `zxcstream` | 📺 1080p FHD | ⚡ Fast HLS Streams | Low-latency global stream mirrors |
+| **A111477** | `a111477` | 📺 1080p FHD | 🎬 Direct MP4 Streams | Alternative direct stream hoster |
+| **DownloadEverything** | `downloadeverything` | 📺 1080p FHD | 🌐 Direct HTTP Extractor | Direct media download & stream extractor |
+| **Dulo** | `dulo` | 📺 1080p FHD | ⚡ Fast HLS Streams | High-speed direct stream network |
 
 ---
 

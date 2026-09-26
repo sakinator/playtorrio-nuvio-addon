@@ -233,6 +233,11 @@ class ScraperEngine {
         if (providerName.isEmpty) providerName = 'MegaScraper';
       }
 
+      final detectedHoster = _detectHoster(rawUrl);
+      if (detectedHoster != null && !providerName.toLowerCase().contains(detectedHoster.toLowerCase())) {
+        providerName = '$providerName ($detectedHoster)';
+      }
+
       // Smart Deduplication across scrapers
       if (cfg.enableDeduplication && seenUrls.contains(rawUrl)) {
         final existing = streamDedupeMap[rawUrl];
@@ -296,6 +301,7 @@ class ScraperEngine {
         audioBadge: badge,
         fileSize: src.fileSize,
         providerName: isSupportedHoster ? '$providerName [Direct]' : providerName,
+        ottPlatform: meta.ottPlatform,
         isCached: false,
         isHls: isHls,
         isProxied: isDirectProxied,
@@ -308,12 +314,8 @@ class ScraperEngine {
         'lang': s.language,
       }).toList();
 
-      final ratingBadge = (cfg.showRatingsInStreams && meta.omdb != null && meta.omdb!.formattedRatingBadge.isNotEmpty)
-          ? '\n${meta.omdb!.formattedRatingBadge}'
-          : '';
-
       if (isTorboxCached) {
-        // ── 1. Link is ALREADY TorBox cached: show 2 links (Cached + Uncached) ──
+        // ── 1. Link is ALREADY TorBox cached: show 2 links (Cached + Direct Play) ──
         final torboxPlayUrl = '$localBaseUrl/torbox/play?url=${Uri.encodeComponent(rawUrl)}';
         final cachedEnriched = BadgeService.enrichStream(
           rawTitle: rawTitle,
@@ -326,6 +328,7 @@ class ScraperEngine {
           audioBadge: badge,
           fileSize: src.fileSize,
           providerName: '$providerName [TorBox Cached]',
+          ottPlatform: meta.ottPlatform,
           isCached: true,
           isHls: false,
           isProxied: false,
@@ -334,7 +337,7 @@ class ScraperEngine {
         final cachedBadge = cachedEnriched['badgeHeader'] ?? qLabel;
         final cachedStream = ScrapedStream(
           name: '⚡ TorBox [Cached]\n$cachedBadge',
-          title: '${cachedEnriched['title']}$ratingBadge\n⚡ Cached on TorBox CDN • Instant High-Speed Playback',
+          title: '${cachedEnriched['title']}\n⚡ Cached on TorBox CDN • Instant High-Speed Playback',
           url: torboxPlayUrl,
           behaviorHints: const {'notWebReady': false},
           provider: '$providerName (TorBox Cached)',
@@ -346,7 +349,7 @@ class ScraperEngine {
 
         finalStreams.add(ScrapedStream(
           name: directEnriched['name']!,
-          title: '${directEnriched['title']}$ratingBadge\n🌐 Original Direct Hoster Link (Uncached)',
+          title: '${directEnriched['title']}\n🌐 Direct Play • Original Hoster Link',
           url: directStreamUrl,
           behaviorHints: directBehaviorHints,
           provider: providerName,
@@ -354,7 +357,7 @@ class ScraperEngine {
           subtitles: subList,
         ));
       } else if (isSupportedHoster) {
-        // ── 2. Link is NOT cached but IS cachable: show 2 links (Click to Cache + Uncached) ──
+        // ── 2. Link is NOT cached but IS cachable: show 2 links (TorBox Cachable + Direct Play) ──
         final headersParam = headers.isNotEmpty ? '&headers=${Uri.encodeComponent(jsonEncode(headers))}' : '';
         final cachePlayUrl = '$localBaseUrl/torbox/play?url=${Uri.encodeComponent(rawUrl)}$headersParam';
 
@@ -368,7 +371,8 @@ class ScraperEngine {
           codec: src.codec,
           audioBadge: badge,
           fileSize: src.fileSize,
-          providerName: '$providerName [TorBox Cache]',
+          providerName: '$providerName [TorBox Cachable]',
+          ottPlatform: meta.ottPlatform,
           isCached: false,
           isHls: isHls,
           isProxied: false,
@@ -376,18 +380,18 @@ class ScraperEngine {
 
         final cacheBadge = cacheEnriched['badgeHeader'] ?? qLabel;
         finalStreams.add(ScrapedStream(
-          name: '⚡ TorBox [Cache]\n$cacheBadge',
-          title: '${cacheEnriched['title']}$ratingBadge\n⚡ Click via Nuvio to cache to TorBox & start playback',
+          name: '🌐 TorBox [Cachable]\n$cacheBadge',
+          title: '${cacheEnriched['title']}\n🌐 TorBox Cachable • Click to cache & stream via TorBox',
           url: cachePlayUrl,
           behaviorHints: const {'notWebReady': false},
-          provider: '$providerName (TorBox Cache)',
+          provider: '$providerName (TorBox Cachable)',
           quality: q,
           subtitles: subList,
         ));
 
         final directStream = ScrapedStream(
           name: directEnriched['name']!,
-          title: '${directEnriched['title']}$ratingBadge\n🌐 Original Direct Hoster Link (Uncached)',
+          title: '${directEnriched['title']}\n🌐 Direct Play • Original Hoster Link',
           url: directStreamUrl,
           behaviorHints: directBehaviorHints,
           provider: providerName,
@@ -400,7 +404,7 @@ class ScraperEngine {
         // ── 3. Standard Non-Hoster / Direct Stream (1 link) ──
         final directStream = ScrapedStream(
           name: directEnriched['name']!,
-          title: '${directEnriched['title']}$ratingBadge',
+          title: directEnriched['title']!,
           url: directStreamUrl,
           behaviorHints: directBehaviorHints,
           provider: providerName,
@@ -454,6 +458,37 @@ class ScraperEngine {
     return finalStreams;
   }
 
+  static String? _detectHoster(String url) {
+    final lower = url.toLowerCase();
+    if (lower.contains('hubcloud')) return 'HubCloud';
+    if (lower.contains('driveseed') || lower.contains('drivebot')) return 'DriveSeed';
+    if (lower.contains('pixeldrain')) return 'Pixeldrain';
+    if (lower.contains('mega.nz') || lower.contains('mega.co.nz')) return 'Mega';
+    if (lower.contains('1fichier')) return '1fichier';
+    if (lower.contains('rapidgator')) return 'Rapidgator';
+    if (lower.contains('turbobit')) return 'Turbobit';
+    if (lower.contains('nitroflare')) return 'Nitroflare';
+    if (lower.contains('katfile')) return 'Katfile';
+    if (lower.contains('ddownload')) return 'DDownload';
+    if (lower.contains('fastcloud') || lower.contains('fastdl')) return 'FastCloud';
+    if (lower.contains('gdflix')) return 'GDFlix';
+    if (lower.contains('filepress')) return 'Filepress';
+    if (lower.contains('streamtape')) return 'Streamtape';
+    if (lower.contains('mixdrop')) return 'Mixdrop';
+    if (lower.contains('doodstream') || lower.contains('dood.')) return 'Doodstream';
+    if (lower.contains('vidcloud') || lower.contains('rabbitstream') || lower.contains('megacloud')) return 'MegaCloud';
+    if (lower.contains('streamwish')) return 'Streamwish';
+    if (lower.contains('filelions')) return 'Filelions';
+    if (lower.contains('vidhide')) return 'Vidhide';
+    if (lower.contains('dropload')) return 'Dropload';
+    if (lower.contains('vidspeed')) return 'Vidspeed';
+    if (lower.contains('krakenfiles')) return 'Krakenfiles';
+    if (lower.contains('gofile')) return 'Gofile';
+    if (lower.contains('mediafire')) return 'Mediafire';
+    if (lower.contains('vadapav')) return 'Vadapav';
+    return null;
+  }
+
   static Future<bool> _probeDirectLink(String url) async {
     try {
       final uri = Uri.parse(url);
@@ -498,7 +533,7 @@ class ScraperEngine {
     // Cache source bonus
     if (s.name.contains('[Cached]')) {
       rank += 30;
-    } else if (s.name.contains('[Cache]')) {
+    } else if (s.name.contains('[Cachable]') || s.name.contains('[Cache]')) {
       rank += 15;
     } else {
       rank += 5;

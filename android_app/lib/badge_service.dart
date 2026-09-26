@@ -77,9 +77,9 @@ class BadgeService {
     BadgeFilter(id: 's-hmax', groupId: 'gs', name: 'MAX', priority: 50, pattern: RegExp(r'\b(?:hmax|hbomax|hbo[\s._-]?max)\b', caseSensitive: false)),
     BadgeFilter(id: 's-hulu', groupId: 'gs', name: 'HULU', priority: 50, pattern: RegExp(r'\bhulu\b', caseSensitive: false)),
     BadgeFilter(id: 's-hotstar', groupId: 'gs', name: 'HOTSTAR', priority: 50, pattern: RegExp(r'\b(?:hotstar|disney[\s._-]?hotstar|jio[\s._-]?hotstar)\b', caseSensitive: false)),
-    BadgeFilter(id: 's-sonyliv', groupId: 'gs', name: 'SONYLIV', priority: 50, pattern: RegExp(r'\bsonyliv\b', caseSensitive: false)),
+    BadgeFilter(id: 's-sonyliv', groupId: 'gs', name: 'SONYLIV', priority: 50, pattern: RegExp(r'\b(?:sonyliv|sony[\s._-]?liv)\b', caseSensitive: false)),
     BadgeFilter(id: 's-zee5', groupId: 'gs', name: 'ZEE5', priority: 50, pattern: RegExp(r'\bzee5\b', caseSensitive: false)),
-    BadgeFilter(id: 's-jio', groupId: 'gs', name: 'JIOCINEMA', priority: 50, pattern: RegExp(r'\bjio(?:cinema)?\b', caseSensitive: false)),
+    BadgeFilter(id: 's-jio', groupId: 'gs', name: 'JIOCINEMA', priority: 50, pattern: RegExp(r'\b(?:jio(?:cinema)?|jiovideo)\b', caseSensitive: false)),
     BadgeFilter(id: 's-sunnxt', groupId: 'gs', name: 'SUNNXT', priority: 50, pattern: RegExp(r'\b(?:sun[\s._-]?nxt|sunnxt)\b', caseSensitive: false)),
     BadgeFilter(id: 's-aha', groupId: 'gs', name: 'AHA', priority: 50, pattern: RegExp(r'\b(?:aha|ahavideo)\b', caseSensitive: false)),
     BadgeFilter(id: 's-hoichoi', groupId: 'gs', name: 'HOICHOI', priority: 50, pattern: RegExp(r'\bhoichoi\b', caseSensitive: false)),
@@ -130,6 +130,37 @@ class BadgeService {
     return result;
   }
 
+  static const List<String> ottBrandNames = [
+    'NETFLIX', 'HOTSTAR', 'PRIME', 'JIOCINEMA', 'SONYLIV', 'ZEE5', 'AHA',
+    'SUNNXT', 'HOICHOI', 'APPLE TV+', 'DISNEY+', 'CRUNCHYROLL', 'MAX', 'HULU',
+    'MANORAMAMAX', 'CHAUPAL', 'PLANET MARATHI', 'MX PLAYER', 'LIONSGATE',
+    'SHEMAROOME', 'VOOT', 'EROS NOW'
+  ];
+
+  static String? normalizeOttPlatform(String? raw) {
+    if (raw == null || raw.trim().isEmpty) return null;
+    final s = raw.toLowerCase().trim();
+    if (s.contains('netflix') || s == 'nflx') return 'NETFLIX';
+    if (s.contains('hotstar') || s.contains('disney')) return 'HOTSTAR';
+    if (s.contains('prime') || s.contains('amazon')) return 'PRIME';
+    if (s.contains('jiocinema') || s.contains('jio cinema')) return 'JIOCINEMA';
+    if (s.contains('sonyliv') || s.contains('sony liv') || s == 'sony') return 'SONYLIV';
+    if (s.contains('zee5') || s.contains('zee 5') || s == 'zee') return 'ZEE5';
+    if (s.contains('aha')) return 'AHA';
+    if (s.contains('sun nxt') || s.contains('sunnxt')) return 'SUNNXT';
+    if (s.contains('hoichoi')) return 'HOICHOI';
+    if (s.contains('apple tv') || s.contains('atvp') || s == 'apple') return 'APPLE TV+';
+    if (s.contains('crunchyroll')) return 'CRUNCHYROLL';
+    if (s.contains('max') || s.contains('hbo')) return 'MAX';
+    if (s.contains('hulu')) return 'HULU';
+    if (s.contains('manorama')) return 'MANORAMAMAX';
+    if (s.contains('chaupal')) return 'CHAUPAL';
+    if (s.contains('planet marathi')) return 'PLANET MARATHI';
+    if (s.contains('mx player') || s == 'mxplayer') return 'MX PLAYER';
+    if (s.contains('lionsgate')) return 'LIONSGATE';
+    return null;
+  }
+
   /// Enriches scraped stream metadata with badges and clean formatting
   static Map<String, String> enrichStream({
     required String rawTitle,
@@ -142,6 +173,7 @@ class BadgeService {
     String? audioBadge,
     String? fileSize,
     required String providerName,
+    String? ottPlatform,
     bool isCached = false,
     bool isHls = false,
     bool isProxied = false,
@@ -175,11 +207,24 @@ class BadgeService {
     final fullText = '$sceneFilename $resolvedRes ${audioBadge ?? ""} ${codec ?? ""}';
     final detectedBadges = getBadges(fullText);
 
+    // Detect OTT platform: from detectedBadges in filename OR from API-detected ottPlatform
+    String? effectiveOtt;
+    for (final b in ottBrandNames) {
+      if (detectedBadges.contains(b)) {
+        effectiveOtt = b;
+        break;
+      }
+    }
+    effectiveOtt ??= normalizeOttPlatform(ottPlatform);
+
     // 3. Assemble badge pills
     final badgePills = detectedBadges.map((b) => '[$b]').join(' ');
 
     // 4. Line 2: Details & Badges
     final details = <String>[];
+    if (effectiveOtt != null && effectiveOtt.isNotEmpty) {
+      details.add('🏷️ $effectiveOtt');
+    }
     if (badgePills.isNotEmpty) {
       details.add(badgePills);
     } else if (resolvedRes.isNotEmpty) {
@@ -191,11 +236,13 @@ class BadgeService {
     }
 
     if (isCached) {
-      details.add('⚡ Torbox Cached');
+      details.add('⚡ TorBox Cached');
+    } else if (providerName.toLowerCase().contains('cachable')) {
+      details.add('🌐 TorBox Cachable');
     } else if (isHls) {
-      details.add('⚡ HLS Stream');
+      details.add('🌐 HLS Stream');
     } else {
-      details.add('⚡ Direct HTTP');
+      details.add('🌐 Direct HTTP');
     }
 
     if (isProxied) {
@@ -217,8 +264,11 @@ class BadgeService {
       '🌐 Source: $cleanProvider',
     ];
 
-    // 6. Built-in Header Badges: resolution, release, visual, audio, and language
+    // 6. Built-in Header Badges: [OTT] [Resolution] [Release] [Visual] [Audio] [Language]
     final headerBadges = <String>[];
+    if (effectiveOtt != null && effectiveOtt.isNotEmpty) {
+      headerBadges.add(effectiveOtt);
+    }
     if (resolvedRes.isNotEmpty) {
       headerBadges.add(resolvedRes);
     }
@@ -233,7 +283,7 @@ class BadgeService {
         break;
       }
     }
-    final badgeHeader = headerBadges.take(4).map((b) => '[$b]').join(' ');
+    final badgeHeader = headerBadges.take(5).map((b) => '[$b]').join(' ');
     final displayName = badgeHeader.isNotEmpty ? '$cleanProvider\n$badgeHeader' : cleanProvider;
 
     return {

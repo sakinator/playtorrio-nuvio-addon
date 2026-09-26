@@ -32,7 +32,7 @@ class AddonConfig {
   String preferredLanguage = 'any'; // 'any', 'hindi', 'english', 'tamil', 'telugu', 'malayalam', 'kannada', 'bengali', 'punjabi', 'dual'
   bool enableDeduplication = true;
   bool enableDeadLinkFilter = true;
-  bool showRatingsInStreams = true;
+  bool showRatingsInStreams = false;
 
   static final File _configFile = File('data/config.json');
 

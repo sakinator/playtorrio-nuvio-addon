@@ -4,6 +4,7 @@ import 'config.dart';
 import 'omdb_service.dart';
 import 'fanart_service.dart';
 import 'tvdb_service.dart';
+import 'badge_service.dart';
 
 class MediaMetadata {
   final String id;
@@ -26,6 +27,7 @@ class MediaMetadata {
   final String? logo;
   final OmdbMetadata? omdb;
   final ArtworkMetadata? artwork;
+  final String? ottPlatform;
 
   MediaMetadata({
     required this.id,
@@ -46,6 +48,7 @@ class MediaMetadata {
     this.logo,
     this.omdb,
     this.artwork,
+    this.ottPlatform,
   });
 
   @override
@@ -212,6 +215,7 @@ class MetadataService {
     EpisodeInfo? epInfo;
     OmdbMetadata? omdbData;
     ArtworkMetadata? artworkData;
+    String? ottPlatform;
 
     try {
       final futures = <Future<void>>[];
@@ -240,6 +244,56 @@ class MetadataService {
               .then((val) {
             epInfo = val;
           }),
+        );
+      }
+
+      // API 7: TVMaze lookup for series OTT Platform / Network (100% free, 0-key)
+      if (isTv && imdbId != null) {
+        futures.add(
+          http.get(Uri.parse('https://api.tvmaze.com/lookup/shows?imdb=$imdbId'), headers: _headers)
+              .timeout(const Duration(seconds: 3))
+              .then((res) {
+            if (res.statusCode == 200) {
+              final data = jsonDecode(res.body);
+              final webChannel = data['webChannel']?['name']?.toString();
+              final network = data['network']?['name']?.toString();
+              final detected = BadgeService.normalizeOttPlatform(webChannel ?? network);
+              if (detected != null) {
+                ottPlatform ??= detected;
+              }
+            }
+          }).catchError((_) {}),
+        );
+      }
+
+      // API 8: TMDB Watch Providers (Movies & Series - India & Global OTT)
+      if (tmdbId != null) {
+        futures.add(
+          http.get(Uri.parse('$_tmdbDirect/$tmdbType/$tmdbId/watch/providers?api_key=$_apiKey'), headers: _headers)
+              .timeout(const Duration(seconds: 3))
+              .then((res) {
+            if (res.statusCode == 200) {
+              final data = jsonDecode(res.body);
+              final results = data['results'] as Map<String, dynamic>?;
+              if (results != null) {
+                for (final country in ['IN', 'US', 'GB']) {
+                  final cData = results[country] as Map<String, dynamic>?;
+                  final flatrate = cData?['flatrate'] as List?;
+                  if (flatrate != null && flatrate.isNotEmpty) {
+                    for (final item in flatrate) {
+                      final pName = item['provider_name']?.toString();
+                      final detected = BadgeService.normalizeOttPlatform(pName);
+                      if (detected != null) {
+                        ottPlatform ??= detected;
+                        break;
+                      }
+                    }
+                  }
+                  if (ottPlatform != null) break;
+                }
+              }
+            }
+          }).catchError((_) {}),
         );
       }
 
@@ -279,6 +333,7 @@ class MetadataService {
       logo: finalLogo,
       omdb: omdbData,
       artwork: artworkData,
+      ottPlatform: ottPlatform,
     );
 
     _cache[cacheKey] = result;

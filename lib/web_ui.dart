@@ -17,7 +17,6 @@ class WebUI {
     final fanartApiKey = cfg.fanartApiKey;
     final tvdbApiKey = cfg.tvdbApiKey;
     final tmdbApiKey = cfg.tmdbApiKey;
-    final showRatingsChecked = cfg.showRatingsInStreams ? 'checked' : '';
     final excludeCamsChecked = cfg.excludeCams ? 'checked' : '';
     final dedupeChecked = cfg.enableDeduplication ? 'checked' : '';
     final deadLinkChecked = cfg.enableDeadLinkFilter ? 'checked' : '';
@@ -25,15 +24,24 @@ class WebUI {
     final prefLang = cfg.preferredLanguage;
 
     final providerCheckboxes = providers.map((p) {
-      final id = p['id'];
-      final name = p['name'];
+      final id = p['id'].toString();
+      final name = p['name'].toString();
       final checked = p['enabled'] == true ? 'checked' : '';
+      final meta = getProviderMeta(id);
       return '''
-        <label class="provider-card" data-name="${name.toString().toLowerCase()}" data-id="${id.toString().toLowerCase()}">
+        <label class="provider-card" data-name="${name.toLowerCase()}" data-id="${id.toLowerCase()}" data-scope="${meta['scope']!.toLowerCase()}" data-quality="${meta['quality']!.toLowerCase()}">
           <input type="checkbox" name="provider" value="$id" $checked onchange="toggleProvider('$id', this.checked)">
           <div class="card-inner">
-            <span class="provider-name">$name</span>
-            <span class="badge">$id</span>
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
+              <span class="provider-name">$name</span>
+              <span class="badge">$id</span>
+            </div>
+            <div class="provider-tags">
+              <span class="tag-pill tag-scope">${meta['scope']}</span>
+              <span class="tag-pill tag-quality">${meta['quality']}</span>
+              <span class="tag-pill tag-tech">${meta['tech']}</span>
+            </div>
+            <div class="provider-desc">${meta['desc']}</div>
           </div>
         </label>
       ''';
@@ -213,9 +221,9 @@ class WebUI {
     .instructions li { margin-bottom: 4px; }
     .grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
       gap: 12px;
-      max-height: 400px;
+      max-height: 480px;
       overflow-y: auto;
       padding: 4px;
     }
@@ -234,8 +242,9 @@ class WebUI {
       padding: 12px;
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      gap: 6px;
       transition: all 0.15s ease;
+      height: 100%;
     }
     .provider-card input:checked + .card-inner {
       border-color: #7928ca;
@@ -243,9 +252,45 @@ class WebUI {
     }
     .provider-name { font-weight: 600; font-size: 0.95rem; }
     .badge {
-      font-size: 0.75rem;
+      font-size: 0.72rem;
       color: var(--text-muted);
       font-family: monospace;
+      background: #21262d;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    .provider-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-top: 2px;
+    }
+    .tag-pill {
+      font-size: 0.68rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+    .tag-scope {
+      background: rgba(88, 166, 255, 0.15);
+      color: #58a6ff;
+      border: 1px solid rgba(88, 166, 255, 0.3);
+    }
+    .tag-quality {
+      background: rgba(63, 185, 80, 0.15);
+      color: #3fb950;
+      border: 1px solid rgba(63, 185, 80, 0.3);
+    }
+    .tag-tech {
+      background: rgba(210, 153, 34, 0.15);
+      color: #d29922;
+      border: 1px solid rgba(210, 153, 34, 0.3);
+    }
+    .provider-desc {
+      font-size: 0.76rem;
+      color: var(--text-muted);
+      line-height: 1.35;
+      margin-top: 2px;
     }
     .test-box {
       display: flex;
@@ -336,6 +381,68 @@ class WebUI {
       background: #0d1117;
       border: 1px solid var(--border);
       border-radius: 8px;
+    }
+    .update-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+    .update-subcard {
+      background: #090d13;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .update-subcard-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+    }
+    .update-subcard-title {
+      font-weight: 600;
+      color: #fff;
+      font-size: 0.95rem;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .update-subcard-desc {
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      margin-top: 4px;
+      line-height: 1.4;
+    }
+    .update-pill {
+      font-size: 0.72rem;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .update-downloads-bar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .btn-sm {
+      padding: 5px 10px;
+      font-size: 0.8rem;
+    }
+    .btn-outline {
+      background: transparent;
+      border-color: var(--border);
+      color: var(--blue);
+      text-decoration: none;
+    }
+    .btn-outline:hover {
+      background: rgba(88, 166, 255, 0.1);
+      border-color: var(--blue);
     }
     .toast {
       position: fixed;
@@ -443,21 +550,13 @@ class WebUI {
       <div class="url-box">
         <label style="min-width: 110px; font-weight:600;">PC (Localhost):</label>
         <input class="url-input" id="localUrl" value="$manifestLocal" readonly>
-        <button class="btn" onclick="copyText('localUrl')">📋 Copy Local URL</button>
-      </div>
-      <div class="url-box">
-        <label style="min-width: 110px; font-weight:600;">🏷️ Badges JSON:</label>
-        <input class="url-input" id="badgesUrl" value="http://$localIp:$port/badges.json" readonly>
-        <button class="btn" onclick="copyText('badgesUrl')">📋 Copy Badges URL</button>
-      </div>
-      
       <div class="instructions">
-        <strong>💡 How to install in Nuvio:</strong>
+        <strong>💡 How to install in Nuvio & Stremio:</strong>
         <ol>
-          <li>Open <strong>Nuvio</strong> on your PC, Android TV, or Mobile device.</li>
+          <li>Open <strong>Nuvio</strong> (or Stremio) on your PC, Android TV, or Mobile device.</li>
           <li>Navigate to <strong>Settings</strong> ➔ <strong>Add-ons</strong> ➔ <strong>Install from URL</strong> (or click the <strong>+</strong> button).</li>
           <li>Paste the <strong>LAN URL</strong> (if running Nuvio on Android TV/Phone) or <strong>Localhost URL</strong> (if running on this PC).</li>
-          <li>Click <strong>Install</strong>. Streams will now directly populate movie & TV pages!</li>
+          <li>Click <strong>Install</strong>. Streams will now directly populate movie & TV pages with inbuilt visual OTT badges (Netflix, Prime, Hotstar, JioCinema, SonyLIV, Zee5), 4K/HDR tags, and clean scene formatting!</li>
         </ol>
       </div>
     </div>
@@ -490,7 +589,7 @@ class WebUI {
         </p>
         <div class="url-box">
           <input class="url-input" id="torboxUploadUrl" placeholder="https://hubcloud.cx/drive/... or any supported hoster URL">
-          <button class="btn btn-success" id="btnUploadTorbox" onclick="uploadLinkToTorbox()">⚡ Cache to TorBox</button>
+          <button class="btn btn-success" id="btnUploadTorbox" onclick="uploadLinkToTorbox()">🌐 Cache to TorBox</button>
         </div>
         <div id="torboxUploadStatus" style="font-size:0.85rem; margin-top:6px; display:none;"></div>
       </div>
@@ -500,7 +599,7 @@ class WebUI {
           <h3 style="font-size:1rem;">🌐 TorBox Live Supported Hosters (<a href="https://torbox.app/hosters" target="_blank" style="color:var(--blue); text-decoration:none;">torbox.app/hosters</a>)</h3>
           <div style="display:flex; gap:8px;">
             <input type="text" id="hosterSearch" placeholder="Filter hosters (e.g. hubcloud)..." oninput="filterHosters()" style="padding:6px 10px; background:#090d13; border:1px solid var(--border); border-radius:4px; color:var(--text); font-size:0.85rem;">
-            <button class="btn" onclick="loadTorboxHosters()">🔄 Refresh Hosters</button>
+            <button class="btn" id="btnRefreshHosters" onclick="loadTorboxHosters()">🔄 Refresh Hosters</button>
           </div>
         </div>
         <div id="hostersGrid" class="grid" style="max-height:240px;">
@@ -572,14 +671,6 @@ class WebUI {
           <div>
             <strong style="color:var(--text);">Ultra-Fast Dead-Link Filter</strong>
             <div style="color:var(--text-muted); font-size:0.8rem;">Runs a rapid 1200ms parallel HEAD probe on direct stream links to eliminate 404/broken file hosters.</div>
-          </div>
-        </label>
-
-        <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
-          <input type="checkbox" id="chkShowRatings" $showRatingsChecked style="width:18px; height:18px;">
-          <div>
-            <strong style="color:var(--text);">Display Live Ratings in Stream Cards</strong>
-            <div style="color:var(--text-muted); font-size:0.8rem;">Stamps IMDb ⭐, Rotten Tomatoes 🍅, and Metacritic Ⓜ️ scores directly onto stream links and /meta responses.</div>
           </div>
         </label>
       </div>
@@ -671,10 +762,22 @@ class WebUI {
           <button class="btn" onclick="bulkToggle(false)">Disable All</button>
         </div>
       </div>
-      <!-- Instant Search Filter -->
-      <div style="display:flex; gap:10px; margin-bottom:12px; align-items:center;">
-        <input type="text" id="providerSearchInput" placeholder="🔍 Search 56 providers (e.g. hubcloud, 111477, vidsrc, bollyflix)..." oninput="filterProvidersList()" style="flex:1; padding:8px 12px; background:#090d13; border:1px solid var(--border); border-radius:6px; color:var(--text); font-size:0.88rem;">
-        <span id="providerFilteredCount" style="font-size:0.82rem; color:var(--text-muted); white-space:nowrap;">Showing ${providers.length} of ${providers.length}</span>
+      <!-- Instant Search Filter & Quick Chips -->
+      <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:14px;">
+        <div style="display:flex; gap:10px; align-items:center;">
+          <input type="text" id="providerSearchInput" placeholder="🔍 Search 56 providers (e.g. hubcloud, 4k, regional, anime, hls, bollyflix)..." oninput="filterProvidersList()" style="flex:1; padding:8px 12px; background:#090d13; border:1px solid var(--border); border-radius:6px; color:var(--text); font-size:0.88rem;">
+          <span id="providerFilteredCount" style="font-size:0.82rem; color:var(--text-muted); white-space:nowrap;">Showing ${providers.length} of ${providers.length}</span>
+        </div>
+        <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;" id="providerFilterChips">
+          <span style="font-size:0.75rem; color:var(--text-muted); margin-right:4px;">Filter by:</span>
+          <button type="button" class="stream-filter-chip active" onclick="setProviderFilter('', this)">All (${providers.length})</button>
+          <button type="button" class="stream-filter-chip" onclick="setProviderFilter('regional', this)">🇮🇳 Indian Regional (8)</button>
+          <button type="button" class="stream-filter-chip" onclick="setProviderFilter('anime', this)">⛩️ Anime & Asian (6)</button>
+          <button type="button" class="stream-filter-chip" onclick="setProviderFilter('global', this)">🌐 Global (42)</button>
+          <button type="button" class="stream-filter-chip" onclick="setProviderFilter('4k', this)">💎 4K UHD</button>
+          <button type="button" class="stream-filter-chip" onclick="setProviderFilter('extractor', this)">☁️ Cloud Extractors</button>
+          <button type="button" class="stream-filter-chip" onclick="setProviderFilter('hls', this)">⚡ Fast HLS</button>
+        </div>
       </div>
       <div class="grid" id="providersGrid">
         $providerCheckboxes
@@ -695,18 +798,118 @@ class WebUI {
       <div id="testResults"></div>
     </div>
 
-    <!-- Upstream Pipeline -->
-    <div class="card">
-      <h2>🔄 Upstream Pipeline</h2>
-      <p style="color:var(--text-muted); margin-bottom:14px;">Automatically pulls upstream updates from <code>ayman708-UX/PlayTorrioV3</code>, regenerates the scraper registry, and hot-reloads all providers.</p>
-      <div class="update-box">
-        <div>
-          <strong>Upstream Source:</strong> <a href="https://github.com/ayman708-UX/PlayTorrioV3" target="_blank" style="color:var(--blue); text-decoration:none;">github.com/ayman708-UX/PlayTorrioV3</a>
-          <div style="font-size:0.85rem; color:var(--text-muted); margin-top:4px;">Pipeline Script: <code>pipeline/update.ps1</code></div>
-        </div>
-        <button class="btn btn-success" id="btnUpdate" onclick="triggerUpdate()">⚡ Check & Pull Updates</button>
+    <!-- Multi-Source Unified Update Hub -->
+    <div class="card" id="updateHubCard">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:10px;">
+        <h2>🔄 Multi-Source Unified Update Hub</h2>
+        <span class="update-pill" style="background:#238636; color:#fff; font-size:0.82rem; padding:4px 10px;">56 Total Active Providers</span>
       </div>
-      <div id="updateStatus" style="margin-top:12px; font-family:monospace; font-size:0.85rem; display:none;"></div>
+      <p style="color:var(--text-muted); margin-bottom:16px;">
+        Manage and synchronize your 56 aggregated providers across PlayTorrio base framework, Cloudstream community plugins & extractors, Indian regional OTTs, Anime scrapers, and official binary releases.
+      </p>
+
+      <div class="update-grid">
+        <!-- 1. App Releases & Core Binaries -->
+        <div class="update-subcard">
+          <div class="update-subcard-header">
+            <div>
+              <div class="update-subcard-title">📦 sakinator-MegaScraper Releases</div>
+              <div class="update-subcard-desc">Official desktop and Android binaries with all scrapers, extractors & TorBox debrid built-in.</div>
+            </div>
+            <span class="update-pill" style="background:#238636; color:#fff;" id="appVersionBadge">v1.5.0 Current</span>
+          </div>
+          <div class="update-downloads-bar">
+            <a href="https://github.com/sakinator/playtorrio-nuvio-addon/releases/latest/download/sakinator-MegaScraper-windows-x64.zip" class="btn btn-sm btn-outline" id="dlWinZip" target="_blank">🪟 Windows (.zip)</a>
+            <a href="https://github.com/sakinator/playtorrio-nuvio-addon/releases/latest/download/sakinator-MegaScraper.apk" class="btn btn-sm btn-outline" id="dlAndroidApk" target="_blank">📱 Android (.apk)</a>
+            <a href="https://github.com/sakinator/playtorrio-nuvio-addon/releases" class="btn btn-sm btn-outline" target="_blank">📜 All Releases</a>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px;">
+            <span id="releaseCheckInfo" style="font-size:0.8rem; color:var(--text-muted);">Release sync ready</span>
+            <button class="btn btn-sm" id="btnCheckRelease" onclick="checkGitHubReleases()">🔍 Check Release</button>
+          </div>
+        </div>
+
+        <!-- 2. Cloudstream Community Addons -->
+        <div class="update-subcard">
+          <div class="update-subcard-header">
+            <div>
+              <div class="update-subcard-title">☁️ Cloudstream Community Addons</div>
+              <div class="update-subcard-desc">Extractors & resolvers for HubCloud, Vega, DriveSeed, Pixeldrain, Mega, 1fichier, Rapidgator, and direct hosters.</div>
+            </div>
+            <span class="update-pill" style="background:#1f6feb; color:#fff;">Plugins & Resolvers</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px;">
+            <div style="font-size:0.8rem; color:var(--text-muted);">Module: <code>services/cloudstream</code></div>
+            <button class="btn btn-sm btn-success" id="btnUpdateCloudstream" onclick="triggerUpdateChannel('cloudstream')">⚡ Update Cloudstream</button>
+          </div>
+        </div>
+
+        <!-- 3. PlayTorrioV3 Base Architecture -->
+        <div class="update-subcard">
+          <div class="update-subcard-header">
+            <div>
+              <div class="update-subcard-title">🔄 PlayTorrioV3 Base Architecture</div>
+              <div class="update-subcard-desc">Core PlayTorrio scraping pipeline and global providers (Vidsrc, Lookmovie, Vidlink, MultiEmbed, etc.).</div>
+            </div>
+            <span class="update-pill" style="background:#8957e5; color:#fff;">Base Framework</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px;">
+            <div style="font-size:0.8rem; color:var(--text-muted);">
+              Upstream: <a href="https://github.com/ayman708-UX/PlayTorrioV3" target="_blank" style="color:var(--blue); text-decoration:none;">ayman708-UX/PlayTorrioV3</a>
+            </div>
+            <button class="btn btn-sm btn-success" id="btnUpdatePlayTorrio" onclick="triggerUpdateChannel('playtorrio')">⚡ Sync PlayTorrio Base</button>
+          </div>
+        </div>
+
+        <!-- 4. Indian OTT & Regional Scrapers -->
+        <div class="update-subcard">
+          <div class="update-subcard-header">
+            <div>
+              <div class="update-subcard-title">🇮🇳 Indian OTT & Anime Scrapers</div>
+              <div class="update-subcard-desc">Bollyflix, Vegamovies, HDHub4u, HindMoviez, Playdesi, Yomovies, 4kHDHub, AnimePahe, GogoAnime, HiAnime, KissKH, Vadapav.</div>
+            </div>
+            <span class="update-pill" style="background:#f0883e; color:#000; font-weight:700;">Regional & Anime</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px;">
+            <div style="font-size:0.8rem; color:var(--text-muted);">Directory: <code>scraper/sites/</code></div>
+            <button class="btn btn-sm btn-success" id="btnUpdateScrapers" onclick="triggerUpdateChannel('scrapers')">⚡ Sync Regional Scrapers</button>
+          </div>
+        </div>
+
+        <!-- 5. Badges & Regional OTT Logos -->
+        <div class="update-subcard">
+          <div class="update-subcard-header">
+            <div>
+              <div class="update-subcard-title">🏷️ Nuvio Badges & Regional OTT Logos</div>
+              <div class="update-subcard-desc">Hot-reloads Netflix, Prime, Hotstar, JioCinema, SonyLIV, Zee5, Aha, SunNXT, Hoichoi, and multi-audio tags.</div>
+            </div>
+            <span class="update-pill" style="background:#d29922; color:#000;">Hot-Reload</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px;">
+            <div style="font-size:0.8rem; color:var(--text-muted);">Source: <code>data/badges.json</code></div>
+            <button class="btn btn-sm btn-success" id="btnUpdateBadges" onclick="triggerUpdateChannel('badges')">⚡ Reload Badges</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Master Full Update Action -->
+      <div style="margin-top:16px; padding-top:14px; border-top:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+        <div style="font-size:0.86rem; color:var(--text-muted);">
+          Syncs git repository, Cloudstream resolvers, PlayTorrio base, regional scrapers, regenerates registry, and refreshes memory caches.
+        </div>
+        <button class="btn btn-success" id="btnMasterUpdate" onclick="triggerUpdateChannel('all')" style="padding:9px 18px; font-weight:600; font-size:0.92rem;">
+          ⚡ Run Full Update Pipeline (All 56 Providers & Sources)
+        </button>
+      </div>
+
+      <!-- Live Terminal Output Console -->
+      <div id="pipelineConsoleBox" style="display:none; margin-top:14px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <span style="font-size:0.8rem; color:var(--text-muted); font-weight:600; text-transform:uppercase; letter-spacing:0.5px;">Update Pipeline Console</span>
+          <span id="pipelineConsoleBadge" class="update-pill" style="font-size:0.75rem; background:#d29922; color:#000;">Running...</span>
+        </div>
+        <pre id="pipelineConsole" style="background:#090d13; border:1px solid var(--border); border-radius:6px; padding:12px; font-family:monospace; font-size:0.82rem; color:#e6edf3; max-height:220px; overflow-y:auto; white-space:pre-wrap; margin:0;"></pre>
+      </div>
     </div>
 
     <!-- Legal Disclaimer Footer -->
@@ -755,14 +958,25 @@ class WebUI {
       input.type = input.type === 'password' ? 'text' : 'password';
     }
 
+    function setProviderFilter(term, btn) {
+      document.querySelectorAll('#providerFilterChips .stream-filter-chip').forEach(c => c.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+      const input = document.getElementById('providerSearchInput');
+      input.value = term;
+      filterProvidersList();
+    }
+
     function filterProvidersList() {
       const query = document.getElementById('providerSearchInput').value.trim().toLowerCase();
       const cards = document.querySelectorAll('#providersGrid .provider-card');
       let visible = 0;
       cards.forEach(c => {
+        const text = c.innerText.toLowerCase();
         const name = c.getAttribute('data-name') || '';
         const id = c.getAttribute('data-id') || '';
-        if (!query || name.includes(query) || id.includes(query)) {
+        const scope = c.getAttribute('data-scope') || '';
+        const quality = c.getAttribute('data-quality') || '';
+        if (!query || text.includes(query) || name.includes(query) || id.includes(query) || scope.includes(query) || quality.includes(query)) {
           c.style.display = '';
           visible++;
         } else {
@@ -865,7 +1079,7 @@ class WebUI {
             preferredLanguage: document.getElementById('prefLangSelect').value,
             enableDeduplication: document.getElementById('chkDedupe').checked,
             enableDeadLinkFilter: document.getElementById('chkDeadLink').checked,
-            showRatingsInStreams: document.getElementById('chkShowRatings').checked,
+            showRatingsInStreams: false,
             omdbApiKey: document.getElementById('omdbApiKey').value.trim(),
             fanartApiKey: document.getElementById('fanartApiKey').value.trim(),
             tvdbApiKey: document.getElementById('tvdbApiKey').value.trim(),
@@ -953,35 +1167,42 @@ class WebUI {
 
     async function loadTorboxHosters() {
       const grid = document.getElementById('hostersGrid');
-      grid.innerHTML = '<div style="color:var(--text-muted); padding:8px;">Fetching active hosters from TorBox...</div>';
+      const btn = document.getElementById('btnRefreshHosters');
+      if (btn) { btn.disabled = true; btn.innerText = '🔄 Loading...'; }
+      grid.innerHTML = '<div style="color:var(--text-muted); padding:10px;">Fetching active hosters from TorBox...</div>';
 
       try {
         const res = await fetch('/api/torbox/hosters');
         const data = await res.json();
-        if (data.success && data.hosters) {
+        if (data && data.success && Array.isArray(data.hosters)) {
           window.torboxHosters = data.hosters;
           renderHosters(data.hosters);
+          showToast('✅ Loaded ' + data.hosters.length + ' TorBox hosters');
         } else {
-          grid.innerHTML = '<div style="color:#f85149; padding:8px;">Failed to load hosters.</div>';
+          grid.innerHTML = '<div style="color:#f85149; padding:10px;">Failed to load hosters from TorBox.</div>';
         }
       } catch (e) {
-        grid.innerHTML = '<div style="color:#f85149; padding:8px;">Error loading hosters: ' + e + '</div>';
+        console.error('loadTorboxHosters error:', e);
+        grid.innerHTML = '<div style="color:#f85149; padding:10px;">Error loading hosters: ' + escapeHtml(e) + '</div>';
+      } finally {
+        if (btn) { btn.disabled = false; btn.innerText = '🔄 Refresh Hosters'; }
       }
     }
 
     function renderHosters(hosters) {
       const grid = document.getElementById('hostersGrid');
-      if (!hosters || hosters.length === 0) {
-        grid.innerHTML = '<div style="color:var(--text-muted); padding:8px;">No hosters found.</div>';
+      if (!hosters || !Array.isArray(hosters) || hosters.length === 0) {
+        grid.innerHTML = '<div style="color:var(--text-muted); padding:10px;">No hosters found.</div>';
         return;
       }
       grid.innerHTML = hosters.map(h => {
         const isUp = h.status === 'online' || h.status === true || h.status === 'up';
-        const domains = (h.domains || []).slice(0, 3).join(', ');
+        const hosterName = escapeHtml(h.name || h.id || 'Hoster');
+        const domains = (Array.isArray(h.domains) ? h.domains : []).slice(0, 3).join(', ');
         return `
           <div class="hoster-card">
             <div style="display:flex; justify-content:space-between; align-items:center;">
-              <span class="hoster-name">\${escapeHtml(h.name || h.id)}</span>
+              <span class="hoster-name">\${hosterName}</span>
               <span class="hoster-status \${isUp ? 'status-up' : 'status-down'}">\${isUp ? 'ONLINE' : 'DOWN'}</span>
             </div>
             <div class="hoster-domains">\${escapeHtml(domains)}</div>
@@ -1037,7 +1258,7 @@ class WebUI {
             title: rawTitle,
             url: finalUrl,
             isCached: rawName.includes('[Cached]') || rawTitle.includes('Cached on TorBox'),
-            isCache: rawName.includes('[Cache]') || rawTitle.includes('cache to TorBox'),
+            isCache: rawName.toLowerCase().includes('cachable') || rawName.includes('[Cache]') || rawTitle.toLowerCase().includes('cachable'),
             is4K: rawName.includes('4K') || rawTitle.includes('[4K]'),
             is1080p: rawName.includes('1080p') || rawTitle.includes('[FHD]') || rawTitle.includes('1080p'),
           };
@@ -1063,14 +1284,14 @@ class WebUI {
       const count4K = currentStreams.filter(s => s.is4K).length;
       const count1080p = currentStreams.filter(s => s.is1080p).length;
       const countCached = currentStreams.filter(s => s.isCached).length;
-      const countCache = currentStreams.filter(s => s.isCache).length;
+      const countCachable = currentStreams.filter(s => s.isCache).length;
       const countDirect = currentStreams.filter(s => !s.isCached && !s.isCache).length;
 
       let filtered = currentStreams;
       if (filter === '4k') filtered = currentStreams.filter(s => s.is4K);
       else if (filter === '1080p') filtered = currentStreams.filter(s => s.is1080p);
       else if (filter === 'cached') filtered = currentStreams.filter(s => s.isCached);
-      else if (filter === 'cache') filtered = currentStreams.filter(s => s.isCache);
+      else if (filter === 'cachable' || filter === 'cache') filtered = currentStreams.filter(s => s.isCache);
       else if (filter === 'direct') filtered = currentStreams.filter(s => !s.isCached && !s.isCache);
 
       let html = `
@@ -1081,8 +1302,8 @@ class WebUI {
             <span class="stream-filter-chip \${filter === '4k' ? 'active' : ''}" onclick="renderFilteredStreams('4k')">4K UHD (\${count4K})</span>
             <span class="stream-filter-chip \${filter === '1080p' ? 'active' : ''}" onclick="renderFilteredStreams('1080p')">1080p FHD (\${count1080p})</span>
             <span class="stream-filter-chip \${filter === 'cached' ? 'active' : ''}" onclick="renderFilteredStreams('cached')">⚡ Cached (\${countCached})</span>
-            <span class="stream-filter-chip \${filter === 'cache' ? 'active' : ''}" onclick="renderFilteredStreams('cache')">⚡ Cache (\${countCache})</span>
-            <span class="stream-filter-chip \${filter === 'direct' ? 'active' : ''}" onclick="renderFilteredStreams('direct')">🌐 Direct (\${countDirect})</span>
+            <span class="stream-filter-chip \${filter === 'cachable' || filter === 'cache' ? 'active' : ''}" onclick="renderFilteredStreams('cachable')">🌐 TorBox Cachable (\${countCachable})</span>
+            <span class="stream-filter-chip \${filter === 'direct' ? 'active' : ''}" onclick="renderFilteredStreams('direct')">🌐 Direct Play (\${countDirect})</span>
           </div>
         </div>
       `;
@@ -1100,7 +1321,7 @@ class WebUI {
         html += '    <button class="btn btn-primary" onclick="copyStreamUrl(' + s.index + ')">📋 Copy URL</button>';
         html += '    <a class="btn" href="' + s.url + '" target="_blank" rel="noreferrer">🔗 Open URL</a>';
         if (!isTorbox) {
-          html += '    <button class="btn btn-success" onclick="uploadLinkToTorbox(\\'' + escapeHtml(s.url) + '\\')">⚡ Cache to TorBox</button>';
+          html += '    <button class="btn btn-success" onclick="uploadLinkToTorbox(\\'' + escapeHtml(s.url) + '\\')">🌐 Cache to TorBox</button>';
         }
         html += '  </div>';
         html += '</div>';
@@ -1164,7 +1385,7 @@ class WebUI {
     }
 
     function escapeHtml(str) {
-      return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      return String(str == null ? '' : str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 
     function copyStreamUrl(idx) {
@@ -1175,35 +1396,111 @@ class WebUI {
       }
     }
 
-    async function triggerUpdate() {
-      const btn = document.getElementById('btnUpdate');
-      const statusDiv = document.getElementById('updateStatus');
-      btn.disabled = true;
-      btn.innerText = 'Updating...';
-      statusDiv.style.display = 'block';
-      statusDiv.innerHTML = '<span style="color:var(--blue);">Contacting update pipeline...</span>';
+    async function triggerUpdateChannel(channel) {
+      const consoleBox = document.getElementById('pipelineConsoleBox');
+      const consoleEl = document.getElementById('pipelineConsole');
+      const badge = document.getElementById('pipelineConsoleBadge');
+      const masterBtn = document.getElementById('btnMasterUpdate');
+
+      consoleBox.style.display = 'block';
+      consoleBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      badge.style.background = '#d29922';
+      badge.style.color = '#000';
+      badge.innerText = 'Running (' + channel + ')...';
+      
+      const timeStr = new Date().toLocaleTimeString();
+      consoleEl.textContent = '[' + timeStr + '] Starting update pipeline for channel: ' + channel + '...\n';
+
+      if (masterBtn) masterBtn.disabled = true;
 
       try {
-        const res = await fetch('/api/pipeline/update', { method: 'POST' });
+        const res = await fetch('/api/pipeline/update', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ channel: channel })
+        });
         const data = await res.json();
-        statusDiv.innerHTML = '<span style="color:' + (data.success ? 'var(--green)' : '#f85149') + '">' + (data.message || data.output) + '</span>';
+        
+        consoleEl.textContent += (data.output ? data.output + '\n' : '');
+        consoleEl.textContent += '[' + new Date().toLocaleTimeString() + '] ' + (data.message || 'Done.\n');
+        consoleEl.scrollTop = consoleEl.scrollHeight;
+
         if (data.success) {
-          setTimeout(() => location.reload(), 2000);
+          badge.style.background = '#238636';
+          badge.style.color = '#fff';
+          badge.innerText = 'Completed';
+          showToast('✅ ' + (data.message || 'Updated successfully!'));
+        } else {
+          badge.style.background = '#f85149';
+          badge.style.color = '#fff';
+          badge.innerText = 'Failed';
+          showToast('❌ Update failed: ' + (data.message || 'Unknown error'));
         }
       } catch (e) {
-        statusDiv.innerHTML = '<span style="color:#f85149;">Pipeline execution error: ' + e + '</span>';
+        consoleEl.textContent += '\n[ERROR] Pipeline execution error: ' + e + '\n';
+        badge.style.background = '#f85149';
+        badge.style.color = '#fff';
+        badge.innerText = 'Error';
+        showToast('❌ Update request error: ' + e);
       } finally {
-        btn.disabled = false;
-        btn.innerText = '⚡ Check & Pull Updates';
+        if (masterBtn) masterBtn.disabled = false;
       }
     }
 
-    // Auto-check TorBox key status on load if key is present
+    async function checkGitHubReleases() {
+      const infoSpan = document.getElementById('releaseCheckInfo');
+      const btn = document.getElementById('btnCheckRelease');
+      const versionBadge = document.getElementById('appVersionBadge');
+      const dlWin = document.getElementById('dlWinZip');
+      const dlApk = document.getElementById('dlAndroidApk');
+
+      if (btn) btn.disabled = true;
+      if (infoSpan) infoSpan.innerText = 'Checking GitHub...';
+
+      try {
+        const res = await fetch('/api/updates/check');
+        const data = await res.json();
+        const cur = data.currentVersion || 'v1.5.0';
+        const rel = data.release;
+        
+        if (rel && rel.version) {
+          if (dlWin && rel.zipUrl) dlWin.href = rel.zipUrl;
+          if (dlApk && rel.apkUrl) dlApk.href = rel.apkUrl;
+
+          if (rel.version === cur) {
+            if (infoSpan) infoSpan.innerText = 'You are on the latest release (' + cur + ')';
+            if (versionBadge) {
+              versionBadge.style.background = '#238636';
+              versionBadge.innerText = cur + ' Latest';
+            }
+          } else {
+            if (infoSpan) {
+              infoSpan.innerHTML = 'New version <strong style="color:var(--green);">' + rel.version + '</strong> available!';
+            }
+            if (versionBadge) {
+              versionBadge.style.background = '#d29922';
+              versionBadge.style.color = '#000';
+              versionBadge.innerText = rel.version + ' Available';
+            }
+          }
+        } else {
+          if (infoSpan) infoSpan.innerText = 'Release data refreshed.';
+        }
+      } catch (e) {
+        if (infoSpan) infoSpan.innerText = 'Release check: ' + cur + ' active';
+      } finally {
+        if (btn) btn.disabled = false;
+      }
+    }
+
+    // Auto-check TorBox key, hosters & GitHub releases on load
     window.addEventListener('DOMContentLoaded', () => {
       const key = document.getElementById('torboxApiKey').value.trim();
       if (key) {
         saveTorboxKey();
       }
+      loadTorboxHosters();
+      checkGitHubReleases();
     });
 
     // Handle ESC key to close player modal
@@ -1216,5 +1513,129 @@ class WebUI {
 </body>
 </html>
     ''';
+  }
+
+  static Map<String, String> getProviderMeta(String id) {
+    switch (id.toLowerCase()) {
+      // 🇮🇳 Indian Regional Special
+      case 'vegamovies':
+        return {'scope': '🇮🇳 Regional', 'quality': '4K UHD', 'tech': '☁️ Cloud Extractors', 'desc': 'High-bitrate V-Cloud, HubCloud 4K/1080p HEVC Multi-Audio'};
+      case 'bollyflix':
+        return {'scope': '🇮🇳 Regional', 'quality': '4K UHD', 'tech': '☁️ Cloud Extractors', 'desc': 'Bollywood, South Hindi Dubbed, 4K/1080p multi-audio releases'};
+      case 'hdhub4u':
+        return {'scope': '🇮🇳 Regional', 'quality': '4K UHD', 'tech': '☁️ Cloud Extractors', 'desc': 'Latest Hindi cinema, South dubs, HubCloud & DriveSeed direct mirrors'};
+      case 'fourkhdhub':
+        return {'scope': '🇮🇳 Regional', 'quality': '4K UHD', 'tech': '☁️ Cloud Extractors', 'desc': 'Pure 2160p 4K UHD Remux, HDR10 & multi-audio regional mirrors'};
+      case 'hindmoviez':
+        return {'scope': '🇮🇳 Regional', 'quality': '1080p FHD', 'tech': '⚡ Fast HLS', 'desc': 'Bollywood, South Hindi dubs & regional streams'};
+      case 'playdesi':
+        return {'scope': '🇮🇳 Regional', 'quality': '1080p FHD', 'tech': '🎬 Direct MP4', 'desc': 'Indian TV shows, daily serials & Desi web series'};
+      case 'yomovies':
+        return {'scope': '🇮🇳 Regional', 'quality': '1080p FHD', 'tech': '⚡ Fast HLS', 'desc': 'Hindi, Tamil, Telugu, Punjabi & regional cinema'};
+      case 'vadapav':
+        return {'scope': '🇮🇳 Regional', 'quality': '1080p FHD', 'tech': '🌐 Direct HTTP', 'desc': 'Zero-lag Indian high-speed direct CDN file storage'};
+
+      // ⛩️ Anime & Asian Special
+      case 'animepahe':
+        return {'scope': '⛩️ Anime', 'quality': '1080p FHD', 'tech': '⚡ Fast HLS', 'desc': 'Sub/Dub anime with multi-bitrate streams & soft subtitles'};
+      case 'gogoanime':
+        return {'scope': '⛩️ Anime', 'quality': '1080p FHD', 'tech': '⚡ Fast HLS', 'desc': 'Simulcast anime episodes, massive archive with dual audio'};
+      case 'hianime':
+        return {'scope': '⛩️ Anime', 'quality': '1080p FHD', 'tech': '⚡ Fast HLS', 'desc': 'HiAnime CDN, multi-quality streams & soft subs'};
+      case 'kisskh':
+        return {'scope': '⛩️ Asian', 'quality': '1080p FHD', 'tech': '⚡ Fast HLS', 'desc': 'K-Drama, C-Drama & Asian series with multi-language subtitles'};
+      case 'kissasian':
+        return {'scope': '⛩️ Asian', 'quality': '720p/1080p', 'tech': '⚡ Fast HLS', 'desc': 'Korean & Asian drama catalog with high-speed playback'};
+      case 'dramacool':
+        return {'scope': '⛩️ Asian', 'quality': '720p/1080p', 'tech': '🎬 Direct MP4', 'desc': 'Asian dramas, variety shows & East Asian cinema'};
+
+      // 🌐 International / Global
+      case 'vidsrc':
+        return {'scope': '🌐 Global', 'quality': '1080p FHD', 'tech': '⚡ Fast HLS', 'desc': 'Flagship multi-server global streaming cluster with adaptive HLS'};
+      case 'lookmovie':
+        return {'scope': '🌐 Global', 'quality': '1080p FHD', 'tech': '⚡ Fast HLS', 'desc': 'Premium global cinema & television series with soft subtitles'};
+      case 'vidlink':
+        return {'scope': '🌐 Global', 'quality': '1080p FHD', 'tech': '⚡ Fast HLS', 'desc': 'Ultra-fast global CDN streaming network with multi-language subs'};
+      case 'multiembed':
+        return {'scope': '🌐 Global', 'quality': '1080p FHD', 'tech': '⚡ Fast HLS', 'desc': 'Aggregated multi-source embed fallback player and resolver'};
+      case 'rivestream':
+        return {'scope': '🌐 Global', 'quality': '1080p FHD', 'tech': '⚡ Fast HLS', 'desc': 'Multi-server high-bitrate streaming network with 4K/1080p streams'};
+      case 'hexa':
+        return {'scope': '🌐 Global', 'quality': '1080p FHD', 'tech': '⚡ Fast HLS', 'desc': 'Multi-server mirror cluster with adaptive bitrate streaming'};
+      case 'megasource':
+        return {'scope': '🌐 Global', 'quality': '1080p FHD', 'tech': '☁️ Cloud Extractors', 'desc': 'Multi-cloud direct stream aggregator and link resolver'};
+      case 'movy':
+        return {'scope': '🌐 Global', 'quality': '1080p FHD', 'tech': '⚡ Fast HLS', 'desc': 'Encrypted HLS & MP4 direct streams for movies and series'};
+      case 'videasy':
+        return {'scope': '🌐 Global', 'quality': '1080p FHD', 'tech': '⚡ Fast HLS', 'desc': 'One-click fast buffer global streams across multi-CDN mirrors'};
+      case 'cinejoy':
+        return {'scope': '🌐 Global', 'quality': '1080p FHD', 'tech': '⚡ Fast HLS', 'desc': 'International entertainment streams & reliable mirror sources'};
+      case 'flystream':
+        return {'scope': '🌐 Global', 'quality': '1080p FHD', 'tech': '⚡ Fast HLS', 'desc': 'Low-latency adaptive bitrate streaming network'};
+      case 'xdownloader':
+        return {'scope': '🌐 Global', 'quality': '1080p FHD', 'tech': '🌐 Direct HTTP', 'desc': 'Direct file hoster link generator & stream extractor'};
+      case 'vuflix':
+        return {'scope': '🌐 Global', 'quality': '1080p FHD', 'tech': '⚡ Fast HLS', 'desc': 'Fast cloud HLS stream resolver for international catalog'};
+      case 'movienight':
+        return {'scope': '🌐 Global', 'quality': '1080p FHD', 'tech': '🎬 Direct MP4', 'desc': 'Nightly movie archive & high-speed direct streams'};
+      case 'fsonline':
+        return {'scope': '🌐 Global', 'quality': '1080p FHD', 'tech': '⚡ Fast HLS', 'desc': 'Worldwide movie & webseries provider with multi-quality mirrors'};
+      case 'cinesrc':
+        return {'scope': '🌐 Global', 'quality': '1080p FHD', 'tech': '🎬 Direct MP4', 'desc': 'Direct master HLS & web embeds for movies and series'};
+      case 'cinesu':
+        return {'scope': '🌐 Global', 'quality': '1080p FHD', 'tech': '⚡ Fast HLS', 'desc': 'International film releases and episodic television streams'};
+      case 'vidfast':
+        return {'scope': '🌐 Global', 'quality': '1080p FHD', 'tech': '⚡ Fast HLS', 'desc': 'Optimized low-latency streaming endpoints'};
+      case 'vidgod':
+        return {'scope': '🌐 Global', 'quality': '1080p FHD', 'tech': '⚡ Fast HLS', 'desc': 'Resilient global streaming fallback with fast seek times'};
+      case 'vidrock':
+        return {'scope': '🌐 Global', 'quality': '1080p FHD', 'tech': '⚡ Fast HLS', 'desc': 'Rock-solid CDN streams with multiple quality options'};
+      case 'vidup':
+        return {'scope': '🌐 Global', 'quality': '1080p FHD', 'tech': '⚡ Fast HLS', 'desc': 'Direct video upload player scraper & mirror resolver'};
+      case 'vidvault':
+        return {'scope': '🌐 Global', 'quality': '1080p FHD', 'tech': '🎬 Direct MP4', 'desc': 'Archived movies & television vault with high retention'};
+      case 'vidzee':
+        return {'scope': '🌐 Global', 'quality': '1080p FHD', 'tech': '⚡ Fast HLS', 'desc': 'Lightning-fast multi-server global player'};
+      case 'vixsrc':
+        return {'scope': '🌐 Global', 'quality': '1080p FHD', 'tech': '⚡ Fast HLS', 'desc': 'High-performance Vix stream mirror with fast buffering'};
+      case 'purstream':
+        return {'scope': '🌐 Global', 'quality': '1080p FHD', 'tech': '⚡ Fast HLS', 'desc': 'Clean uninterrupted international streams'};
+      case 'nova':
+        return {'scope': '🌐 Global', 'quality': '1080p FHD', 'tech': '⚡ Fast HLS', 'desc': 'Global release cluster with multiple server mirrors'};
+      case 'flaxmovies':
+        return {'scope': '🌐 Global', 'quality': '1080p FHD', 'tech': '⚡ Fast HLS', 'desc': 'Global movie releases & web streaming endpoints'};
+      case 'bcine':
+        return {'scope': '🌐 Global', 'quality': '1080p FHD', 'tech': '🎬 Direct MP4', 'desc': 'Direct international cinema catalog with MP4 streams'};
+      case 'frame':
+        return {'scope': '🌐 Global', 'quality': '1080p FHD', 'tech': '⚡ Fast HLS', 'desc': 'High-efficiency adaptive video streams'};
+      case 'fsharetv':
+        return {'scope': '🌐 Global', 'quality': '1080p FHD', 'tech': '⚡ Fast HLS', 'desc': 'Global TV network episodes & television serials'};
+      case 'fsonic':
+        return {'scope': '🌐 Global', 'quality': '1080p FHD', 'tech': '🎬 Direct MP4', 'desc': 'Ultra-fast international CDN streams'};
+      case 'lmscript':
+        return {'scope': '🌐 Global', 'quality': '1080p FHD', 'tech': '⚡ Fast HLS', 'desc': 'Script-based lookmovie alternative mirror'};
+      case 'mapple':
+        return {'scope': '🌐 Global', 'quality': '1080p FHD', 'tech': '⚡ Fast HLS', 'desc': 'Fresh global box office & TV episodes'};
+      case 'meowtv':
+        return {'scope': '🌐 Global', 'quality': '1080p FHD', 'tech': '⚡ Fast HLS', 'desc': 'Curated television shows & movies'};
+      case 'peestream':
+        return {'scope': '🌐 Global', 'quality': '1080p FHD', 'tech': '🎬 Direct MP4', 'desc': 'Direct streaming hoster scraper'};
+      case 'vidapi':
+        return {'scope': '🌐 Global', 'quality': '1080p FHD', 'tech': '⚡ Fast HLS', 'desc': 'API-driven media scraper endpoint'};
+      case 'vidcore':
+        return {'scope': '🌐 Global', 'quality': '1080p FHD', 'tech': '⚡ Fast HLS', 'desc': 'Core video streaming cluster for global releases'};
+      case 'xpass':
+        return {'scope': '🌐 Global', 'quality': '1080p FHD', 'tech': '⚡ Fast HLS', 'desc': 'Bypass scraper for premium media mirrors'};
+      case 'zxcstream':
+        return {'scope': '🌐 Global', 'quality': '1080p FHD', 'tech': '⚡ Fast HLS', 'desc': 'Low-latency global stream mirrors'};
+      case 'a111477':
+        return {'scope': '🌐 Global', 'quality': '1080p FHD', 'tech': '🎬 Direct MP4', 'desc': 'Alternative direct stream hoster'};
+      case 'downloadeverything':
+        return {'scope': '🌐 Global', 'quality': '1080p FHD', 'tech': '🌐 Direct HTTP', 'desc': 'Direct media download & stream extractor'};
+      case 'dulo':
+        return {'scope': '🌐 Global', 'quality': '1080p FHD', 'tech': '⚡ Fast HLS', 'desc': 'High-speed direct stream network'};
+      default:
+        return {'scope': '🌐 Global', 'quality': '1080p FHD', 'tech': '⚡ Fast HLS', 'desc': 'Direct cloud media stream scraper'};
+    }
   }
 }
