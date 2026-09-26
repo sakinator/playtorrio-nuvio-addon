@@ -1232,7 +1232,13 @@ class WebUI {
       grid.innerHTML = hosters.map(h => {
         const isUp = h.status === 'online' || h.status === true || h.status === 'up';
         const hosterName = escapeHtml(h.name || h.id || 'Hoster');
-        const domains = (Array.isArray(h.domains) ? h.domains : []).slice(0, 3).join(', ');
+        let domainList = [];
+        if (Array.isArray(h.domains)) {
+          domainList = h.domains;
+        } else if (typeof h.domains === 'string') {
+          domainList = h.domains.split(/[\s,]+/);
+        }
+        const domains = domainList.filter(Boolean).slice(0, 3).join(', ');
         return `
           <div class="hoster-card">
             <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -1250,7 +1256,7 @@ class WebUI {
       if (!window.torboxHosters) return;
       const filtered = window.torboxHosters.filter(h => {
         const name = (h.name || h.id || '').toLowerCase();
-        const domains = (h.domains || []).join(' ').toLowerCase();
+        const domains = (Array.isArray(h.domains) ? h.domains.join(' ') : String(h.domains || '')).toLowerCase();
         return name.includes(q) || domains.includes(q);
       });
       renderHosters(filtered);
@@ -1443,7 +1449,7 @@ class WebUI {
       badge.innerText = 'Running (' + channel + ')...';
       
       const timeStr = new Date().toLocaleTimeString();
-      consoleEl.textContent = '[' + timeStr + '] Starting update pipeline for channel: ' + channel + '...\n';
+      consoleEl.textContent = '[' + timeStr + '] Starting update pipeline for channel: ' + channel + '...\\n';
 
       if (masterBtn) masterBtn.disabled = true;
 
@@ -1455,8 +1461,8 @@ class WebUI {
         });
         const data = await res.json();
         
-        consoleEl.textContent += (data.output ? data.output + '\n' : '');
-        consoleEl.textContent += '[' + new Date().toLocaleTimeString() + '] ' + (data.message || 'Done.\n');
+        consoleEl.textContent += (data.output ? data.output + '\\n' : '');
+        consoleEl.textContent += '[' + new Date().toLocaleTimeString() + '] ' + (data.message || 'Done.\\n');
         consoleEl.scrollTop = consoleEl.scrollHeight;
 
         if (data.success) {
@@ -1471,7 +1477,7 @@ class WebUI {
           showToast('❌ Update failed: ' + (data.message || 'Unknown error'));
         }
       } catch (e) {
-        consoleEl.textContent += '\n[ERROR] Pipeline execution error: ' + e + '\n';
+        consoleEl.textContent += '\\n[ERROR] Pipeline execution error: ' + e + '\\n';
         badge.style.background = '#f85149';
         badge.style.color = '#fff';
         badge.innerText = 'Error';
@@ -1528,14 +1534,21 @@ class WebUI {
     }
 
     // Auto-check TorBox key, hosters & GitHub releases on load
-    window.addEventListener('DOMContentLoaded', () => {
-      const key = document.getElementById('torboxApiKey').value.trim();
+    function initOnLoad() {
+      const keyInput = document.getElementById('torboxApiKey');
+      const key = keyInput ? keyInput.value.trim() : '';
       if (key) {
         saveTorboxKey();
       }
       loadTorboxHosters();
       checkGitHubReleases();
-    });
+    }
+
+    if (document.readyState === 'loading') {
+      window.addEventListener('DOMContentLoaded', initOnLoad);
+    } else {
+      initOnLoad();
+    }
 
     // Handle ESC key to close player modal
     window.addEventListener('keydown', (e) => {
