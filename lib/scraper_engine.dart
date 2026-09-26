@@ -248,8 +248,9 @@ class ScraperEngine {
         );
 
         // 1a. Cached Link (instant TorBox CDN stream)
+        final cachedBadge = cachedEnriched['badgeHeader'] ?? qLabel;
         finalStreams.add(ScrapedStream(
-          name: 'TorBox [Cached]\n$qLabel',
+          name: '⚡ TorBox [Cached]\n$cachedBadge',
           title: '${cachedEnriched['title']}\n⚡ Cached on TorBox CDN • Instant High-Speed Playback',
           url: torboxPlayUrl,
           behaviorHints: const {'notWebReady': false},
@@ -290,8 +291,9 @@ class ScraperEngine {
         );
 
         // 2a. Click to Cache Link (initiates cloud caching on TorBox)
+        final cacheBadge = cacheEnriched['badgeHeader'] ?? qLabel;
         finalStreams.add(ScrapedStream(
-          name: 'TorBox [Cache]\n$qLabel',
+          name: '⚡ TorBox [Cache]\n$cacheBadge',
           title: '${cacheEnriched['title']}\n⚡ Click via Nuvio to cache to TorBox & start playback',
           url: cachePlayUrl,
           behaviorHints: const {'notWebReady': false},

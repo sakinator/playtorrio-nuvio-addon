@@ -45,6 +45,19 @@ class BadgeService {
     BadgeFilter(id: 'ch-51', groupId: 'gc', name: '5.1', priority: 80, pattern: RegExp(r'\b5\.1\b', caseSensitive: false)),
     BadgeFilter(id: 'ch-20', groupId: 'gc', name: '2.0', priority: 60, pattern: RegExp(r'\b2\.0\b', caseSensitive: false)),
 
+    // Audio Languages (gl)
+    BadgeFilter(id: 'l-dual', groupId: 'gl', name: 'Dual Audio', priority: 100, pattern: RegExp(r'\b(?:dual[\s._-]?audio)\b', caseSensitive: false)),
+    BadgeFilter(id: 'l-multi', groupId: 'gl', name: 'Multi Audio', priority: 95, pattern: RegExp(r'\b(?:multi[\s._-]?audio)\b', caseSensitive: false)),
+    BadgeFilter(id: 'l-hin', groupId: 'gl', name: 'Hindi', priority: 80, pattern: RegExp(r'\bhindi\b', caseSensitive: false)),
+    BadgeFilter(id: 'l-tam', groupId: 'gl', name: 'Tamil', priority: 80, pattern: RegExp(r'\btamil\b', caseSensitive: false)),
+    BadgeFilter(id: 'l-tel', groupId: 'gl', name: 'Telugu', priority: 80, pattern: RegExp(r'\btelugu\b', caseSensitive: false)),
+    BadgeFilter(id: 'l-mal', groupId: 'gl', name: 'Malayalam', priority: 80, pattern: RegExp(r'\bmalayalam\b', caseSensitive: false)),
+    BadgeFilter(id: 'l-kan', groupId: 'gl', name: 'Kannada', priority: 80, pattern: RegExp(r'\bkannada\b', caseSensitive: false)),
+    BadgeFilter(id: 'l-ben', groupId: 'gl', name: 'Bengali', priority: 80, pattern: RegExp(r'\bbengali\b', caseSensitive: false)),
+    BadgeFilter(id: 'l-pun', groupId: 'gl', name: 'Punjabi', priority: 80, pattern: RegExp(r'\bpunjabi\b', caseSensitive: false)),
+    BadgeFilter(id: 'l-eng', groupId: 'gl', name: 'English', priority: 70, pattern: RegExp(r'\b(?:english|eng)\b', caseSensitive: false)),
+    BadgeFilter(id: 'l-jap', groupId: 'gl', name: 'Japanese', priority: 70, pattern: RegExp(r'\b(?:japanese|jap)\b', caseSensitive: false)),
+
     // Stream Source Brands (gs)
     BadgeFilter(id: 's-nflx', groupId: 'gs', name: 'NETFLIX', priority: 50, pattern: RegExp(r'\b(?:nflx|netflix)\b', caseSensitive: false)),
     BadgeFilter(id: 's-amzn', groupId: 'gs', name: 'PRIME', priority: 50, pattern: RegExp(r'\b(?:amzn|prime[\s._-]?video)\b', caseSensitive: false)),
@@ -182,15 +195,29 @@ class BadgeService {
       '🌐 Source: $cleanProvider',
     ];
 
-    // 6. Name: Only provider name and resolution (zero mentions of saket or sakinator)
-    final q = resolvedRes.isNotEmpty
-        ? (resolvedRes == '4K' ? '4K' : (resolvedRes.contains('1080') ? '1080p' : resolvedRes))
-        : (detectedBadges.contains('4K') ? '4K' : (detectedBadges.contains('FHD') ? '1080p' : ''));
-    final displayName = q.isNotEmpty ? '$cleanProvider\n$q' : cleanProvider;
+    // 6. Built-in Header Badges: resolution, release, visual, audio, and language
+    final headerBadges = <String>[];
+    if (resolvedRes.isNotEmpty) {
+      headerBadges.add(resolvedRes);
+    }
+    for (final b in ['Remux', 'BluRay', 'WEB-DL', 'DV', 'HDR10+', 'HDR', 'Atmos', 'DTS-HD', '5.1']) {
+      if (detectedBadges.contains(b) && !headerBadges.contains(b)) {
+        headerBadges.add(b);
+      }
+    }
+    for (final l in ['Dual Audio', 'Multi Audio', 'Hindi', 'Tamil', 'Telugu', 'Malayalam', 'Kannada', 'English', 'Japanese']) {
+      if (detectedBadges.contains(l) && !headerBadges.contains(l)) {
+        headerBadges.add(l);
+        break;
+      }
+    }
+    final badgeHeader = headerBadges.take(4).map((b) => '[$b]').join(' ');
+    final displayName = badgeHeader.isNotEmpty ? '$cleanProvider\n$badgeHeader' : cleanProvider;
 
     return {
       'name': displayName,
       'title': titleLines.join('\n'),
+      'badgeHeader': badgeHeader.isNotEmpty ? badgeHeader : (resolvedRes.isNotEmpty ? '[$resolvedRes]' : ''),
     };
   }
 
