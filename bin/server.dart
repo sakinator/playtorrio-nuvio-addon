@@ -284,16 +284,16 @@ Future<void> _handleRequest(HttpRequest request, String lanIp, int port) async {
       final debridedUrl = await TorboxService.instance.debridLink(targetUrl, apiKey);
       if (debridedUrl != null && debridedUrl.isNotEmpty) {
         print('[Torbox] Redirecting to TorBox CDN: $debridedUrl');
-        request.response.redirect(Uri.parse(debridedUrl), status: HttpStatus.found);
+        await request.response.redirect(Uri.parse(debridedUrl), status: HttpStatus.found);
         return;
       }
       // Fallback: if headers required, redirect to proxy; otherwise direct to targetUrl
       if (headersParam != null && headersParam.isNotEmpty) {
         final proxyUrl = '$localBaseUrl/proxy?url=${Uri.encodeComponent(targetUrl)}&headers=${Uri.encodeComponent(headersParam)}';
-        request.response.redirect(Uri.parse(proxyUrl), status: HttpStatus.found);
+        await request.response.redirect(Uri.parse(proxyUrl), status: HttpStatus.found);
         return;
       }
-      request.response.redirect(Uri.parse(targetUrl), status: HttpStatus.found);
+      await request.response.redirect(Uri.parse(targetUrl), status: HttpStatus.found);
       return;
     }
 
@@ -307,6 +307,23 @@ Future<void> _handleRequest(HttpRequest request, String lanIp, int port) async {
       AddonConfig.instance.toggleProvider(providerId, enabled);
       request.response.headers.contentType = ContentType.json;
       request.response.write(jsonEncode({'success': true, 'id': providerId, 'enabled': enabled}));
+      await request.response.close();
+      return;
+    }
+
+    // ── 5a. API: Bulk toggle providers: POST /api/providers/bulk ──────────
+    if (path == '/api/providers/bulk' && method == 'POST') {
+      final bodyStr = await utf8.decodeStream(request);
+      final bodyJson = jsonDecode(bodyStr) as Map;
+      final ids = (bodyJson['ids'] as List?)?.map((e) => e.toString()).toList() ?? [];
+      final enabled = bodyJson['enabled'] == true;
+
+      for (final id in ids) {
+        AddonConfig.instance.toggleProvider(id, enabled);
+      }
+      await AddonConfig.instance.save();
+      request.response.headers.contentType = ContentType.json;
+      request.response.write(jsonEncode({'success': true, 'count': ids.length, 'enabled': enabled}));
       await request.response.close();
       return;
     }

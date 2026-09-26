@@ -1377,16 +1377,22 @@ class WebUI {
         html += '  </div>';
         html += '  <div class="stream-actions">';
         html += '    <button class="btn btn-play" onclick="openPlayerModal(' + s.index + ')">▶️ Play Stream</button>';
-        html += '    <button class="btn btn-primary" onclick="copyStreamUrl(' + s.index + ')">📋 Copy URL</button>';
-        html += '    <a class="btn" href="' + s.url + '" target="_blank" rel="noreferrer">🔗 Open URL</a>';
+        html += '    <a class="btn" href="' + escapeHtml(s.url) + '" target="_blank" rel="noreferrer">🔗 Open URL</a>';
         if (!isTorbox) {
-          html += '    <button class="btn btn-success" onclick="uploadLinkToTorbox(\\'' + escapeHtml(s.url) + '\\', this)">🌐 Cache to TorBox</button>';
+          html += '    <button class="btn btn-success" onclick="uploadStreamToTorbox(' + s.index + ', this)">🌐 Cache to TorBox</button>';
         }
         html += '  </div>';
         html += '</div>';
       }
 
       resultsDiv.innerHTML = html;
+    }
+
+    function uploadStreamToTorbox(idx, btn) {
+      const s = currentStreams[idx];
+      if (s && s.url) {
+        uploadLinkToTorbox(s.url, btn);
+      }
     }
 
     function openPlayerModal(idx) {

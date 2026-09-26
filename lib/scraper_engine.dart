@@ -164,11 +164,16 @@ class ScraperEngine {
         _consecutiveFailures[scraper.providerId] = 0;
         _trippedUntil.remove(scraper.providerId);
       } catch (_) {
-        final fails = (_consecutiveFailures[scraper.providerId] ?? 0) + 1;
-        _consecutiveFailures[scraper.providerId] = fails;
-        if (fails >= 3) {
-          _trippedUntil[scraper.providerId] = DateTime.now().add(const Duration(minutes: 10));
-          print('[CircuitBreaker] Scraper ${scraper.providerId} tripped for 10m (3 consecutive failures).');
+        if (localResults.isEmpty) {
+          final fails = (_consecutiveFailures[scraper.providerId] ?? 0) + 1;
+          _consecutiveFailures[scraper.providerId] = fails;
+          if (fails >= 3) {
+            _trippedUntil[scraper.providerId] = DateTime.now().add(const Duration(minutes: 10));
+            print('[CircuitBreaker] Scraper ${scraper.providerId} tripped for 10m (3 consecutive failures).');
+          }
+        } else {
+          _consecutiveFailures[scraper.providerId] = 0;
+          _trippedUntil.remove(scraper.providerId);
         }
       }
       return localResults;
