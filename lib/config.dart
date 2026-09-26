@@ -17,6 +17,13 @@ class AddonConfig {
   String tmdbApiKey = 'b3556f3b206e16f82df4d1f6fd4545e6';
   String torboxApiKey = '';
 
+  // Stream Filtering Profiles & Optimization
+  bool excludeCams = true;
+  String maxResolution = 'all'; // 'all', '1080p', '720p'
+  String preferredLanguage = 'any'; // 'any', 'hindi', 'english', 'tamil', 'telugu', 'malayalam', 'kannada', 'bengali', 'punjabi', 'dual'
+  bool enableDeduplication = true;
+  bool enableDeadLinkFilter = true;
+
   static final File _configFile = File('data/config.json');
 
   AddonConfig._();
@@ -48,6 +55,21 @@ class AddonConfig {
         if (map['torboxApiKey'] is String) {
           torboxApiKey = map['torboxApiKey'];
         }
+        if (map['excludeCams'] is bool) {
+          excludeCams = map['excludeCams'];
+        }
+        if (map['maxResolution'] is String) {
+          maxResolution = map['maxResolution'];
+        }
+        if (map['preferredLanguage'] is String) {
+          preferredLanguage = map['preferredLanguage'];
+        }
+        if (map['enableDeduplication'] is bool) {
+          enableDeduplication = map['enableDeduplication'];
+        }
+        if (map['enableDeadLinkFilter'] is bool) {
+          enableDeadLinkFilter = map['enableDeadLinkFilter'];
+        }
       }
     } catch (e) {
       print('[AddonConfig] Error loading config: $e');
@@ -69,6 +91,11 @@ class AddonConfig {
         'autoCheckUpdates': autoCheckUpdates,
         'tmdbApiKey': tmdbApiKey,
         'torboxApiKey': torboxApiKey,
+        'excludeCams': excludeCams,
+        'maxResolution': maxResolution,
+        'preferredLanguage': preferredLanguage,
+        'enableDeduplication': enableDeduplication,
+        'enableDeadLinkFilter': enableDeadLinkFilter,
       };
       await _configFile.writeAsString(const JsonEncoder.withIndent('  ').convert(data));
     } catch (e) {

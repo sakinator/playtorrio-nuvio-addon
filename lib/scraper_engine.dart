@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'scraper_registry.dart';
 import 'config.dart';
 import 'metadata_service.dart';
@@ -7,6 +8,13 @@ import 'upstream/models/stream/stream_model.dart';
 import 'upstream/services/scraper/stream_scraper.dart';
 import 'badge_service.dart';
 import 'torbox_service.dart';
+
+class _CachedScrape {
+  final List<ScrapedStream> streams;
+  final DateTime expiresAt;
+  _CachedScrape(this.streams, this.expiresAt);
+  bool get isExpired => DateTime.now().isAfter(expiresAt);
+}
 
 class ScrapedStream {
   final String name;
@@ -45,10 +53,17 @@ class ScraperEngine {
   /// launching 46×2 parallel requests.
   final Map<String, Future<List<ScrapedStream>>> _inFlight = {};
 
+  /// Short-term Scrape Cache (12m TTL) for instant replay and seamless browsing
+  final Map<String, _CachedScrape> _scrapeCache = {};
+
   /// Circuit Breaker: maps providerId to consecutive failure count
   final Map<String, int> _consecutiveFailures = {};
   /// Circuit Breaker: maps providerId to expiration of tripped state
   final Map<String, DateTime> _trippedUntil = {};
+
+  static final HttpClient _probeClient = HttpClient()
+    ..connectionTimeout = const Duration(milliseconds: 1200)
+    ..badCertificateCallback = ((_, __, ___) => true);
 
   ScraperEngine._() {
     _initScrapers();
@@ -61,6 +76,7 @@ class ScraperEngine {
 
   void reloadScrapers() {
     _inFlight.clear(); // Invalidate any in-flight results after a reload
+    _scrapeCache.clear();
     _consecutiveFailures.clear();
     _trippedUntil.clear();
     _initScrapers();
@@ -86,16 +102,27 @@ class ScraperEngine {
     required MediaMetadata meta,
     required String localBaseUrl,
   }) {
-    // Deduplicate concurrent requests for the same content.
-    // Key on type+id – localBaseUrl is always the same server LAN address.
+    // 1. Check Short-Term Scrape Cache (instant 0ms response)
     final key = '${meta.type}|${meta.id}';
+    final cached = _scrapeCache[key];
+    if (cached != null && !cached.isExpired) {
+      print('[ScraperEngine] Returning cached scrape for "$key" (${cached.streams.length} stream(s)).');
+      return Future.value(cached.streams);
+    }
+
+    // 2. Deduplicate concurrent in-flight requests for the same content
     if (_inFlight.containsKey(key)) {
       print('[ScraperEngine] Deduplicating concurrent request for "$key".');
       return _inFlight[key]!;
     }
+
     final future = _doScrapeAll(meta: meta, localBaseUrl: localBaseUrl);
     _inFlight[key] = future;
-    future.whenComplete(() => _inFlight.remove(key));
+    future.then((streams) {
+      if (streams.isNotEmpty) {
+        _scrapeCache[key] = _CachedScrape(streams, DateTime.now().add(const Duration(minutes: 12)));
+      }
+    }).whenComplete(() => _inFlight.remove(key));
     return future;
   }
 
@@ -152,35 +179,88 @@ class ScraperEngine {
     final rawResults = <StreamSource>[
       for (final list in perScraperResults) ...list,
     ];
+
+    // ── Batch TorBox Cache Check (Instant single query for all hoster URLs) ──
+    final torboxKey = cfg.torboxApiKey.trim();
+    final supportedHosterUrls = <String>[];
+    if (torboxKey.isNotEmpty) {
+      for (final src in rawResults) {
+        final rawUrl = src.url ?? src.externalUrl;
+        if (rawUrl != null && rawUrl.startsWith('http') && TorboxService.instance.isSupportedHoster(rawUrl)) {
+          supportedHosterUrls.add(rawUrl);
+        }
+      }
+    }
+    final torboxCacheMap = supportedHosterUrls.isNotEmpty
+        ? await TorboxService.instance.checkCachedBatch(supportedHosterUrls, torboxKey)
+        : <String, bool>{};
+
+    // ── Dead-Link Filter: Quick concurrent HEAD probe on direct stream URLs ──
+    final deadUrls = <String>{};
+    if (cfg.enableDeadLinkFilter) {
+      final probeCandidates = <String>[];
+      for (final src in rawResults) {
+        final rawUrl = src.url ?? src.externalUrl;
+        if (rawUrl != null &&
+            rawUrl.startsWith('http') &&
+            !rawUrl.contains('.m3u8') &&
+            !rawUrl.contains('.mpd') &&
+            torboxCacheMap[rawUrl] != true) {
+          probeCandidates.add(rawUrl);
+        }
+      }
+      if (probeCandidates.isNotEmpty) {
+        final probeFutures = probeCandidates.take(25).map((url) async {
+          final isAlive = await _probeDirectLink(url);
+          if (!isAlive) deadUrls.add(url);
+        });
+        await Future.wait(probeFutures);
+      }
+    }
+
     final seenUrls = <String>{};
+    final streamDedupeMap = <String, ScrapedStream>{};
     final finalStreams = <ScrapedStream>[];
 
     for (final src in rawResults) {
       final rawUrl = src.url ?? src.externalUrl;
       if (rawUrl == null || rawUrl.isEmpty || !rawUrl.startsWith('http')) continue;
-      if (seenUrls.contains(rawUrl)) continue;
-      seenUrls.add(rawUrl);
+      if (deadUrls.contains(rawUrl)) continue; // Filtered broken link
 
       String providerName = src.providerName ?? src.name ?? 'MegaScraper';
       if (providerName.toLowerCase().contains('playtorrio')) {
         providerName = providerName.replaceAll(RegExp(r'PlayTorrio(HTTP)?', caseSensitive: false), 'MegaScraper').trim();
         if (providerName.isEmpty) providerName = 'MegaScraper';
       }
+
+      // Smart Deduplication across scrapers
+      if (cfg.enableDeduplication && seenUrls.contains(rawUrl)) {
+        final existing = streamDedupeMap[rawUrl];
+        if (existing != null && !existing.provider.contains(providerName)) {
+          final updated = ScrapedStream(
+            name: existing.name,
+            title: '${existing.title} • Merged with $providerName',
+            url: existing.url,
+            behaviorHints: existing.behaviorHints,
+            provider: '${existing.provider} + $providerName',
+            quality: existing.quality,
+            subtitles: existing.subtitles,
+          );
+          final idx = finalStreams.indexOf(existing);
+          if (idx != -1) finalStreams[idx] = updated;
+          streamDedupeMap[rawUrl] = updated;
+        }
+        continue;
+      }
+      seenUrls.add(rawUrl);
+
       final q = src.quality ?? '';
       final isHls = rawUrl.contains('.m3u8');
       final badge = src.getAudioBadge(mediaTitle: meta.title) ?? '';
       final headers = src.headers ?? {};
 
-      // ── URL & proxy decision ───────────────────────────────────────────
-      // ── Torbox Caching & Debrid Integration ───────────────────────────
-      final torboxKey = cfg.torboxApiKey.trim();
       final isSupportedHoster = torboxKey.isNotEmpty && TorboxService.instance.isSupportedHoster(rawUrl);
-      bool isTorboxCached = false;
-      if (isSupportedHoster) {
-        try {
-          isTorboxCached = await TorboxService.instance.checkCached(rawUrl, torboxKey);
-        } catch (_) {}
-      }
+      final isTorboxCached = torboxCacheMap[rawUrl] == true;
 
       // ── Direct (Uncached) Stream Configuration ────────────────────────
       String directStreamUrl = rawUrl;
@@ -247,9 +327,8 @@ class ScraperEngine {
           isProxied: false,
         );
 
-        // 1a. Cached Link (instant TorBox CDN stream)
         final cachedBadge = cachedEnriched['badgeHeader'] ?? qLabel;
-        finalStreams.add(ScrapedStream(
+        final cachedStream = ScrapedStream(
           name: '⚡ TorBox [Cached]\n$cachedBadge',
           title: '${cachedEnriched['title']}\n⚡ Cached on TorBox CDN • Instant High-Speed Playback',
           url: torboxPlayUrl,
@@ -257,9 +336,10 @@ class ScraperEngine {
           provider: '$providerName (TorBox Cached)',
           quality: q,
           subtitles: subList,
-        ));
+        );
+        finalStreams.add(cachedStream);
+        streamDedupeMap[rawUrl] = cachedStream;
 
-        // 1b. Uncached Link (original direct hoster link)
         finalStreams.add(ScrapedStream(
           name: directEnriched['name']!,
           title: '${directEnriched['title']}\n🌐 Original Direct Hoster Link (Uncached)',
@@ -290,7 +370,6 @@ class ScraperEngine {
           isProxied: false,
         );
 
-        // 2a. Click to Cache Link (initiates cloud caching on TorBox)
         final cacheBadge = cacheEnriched['badgeHeader'] ?? qLabel;
         finalStreams.add(ScrapedStream(
           name: '⚡ TorBox [Cache]\n$cacheBadge',
@@ -302,8 +381,7 @@ class ScraperEngine {
           subtitles: subList,
         ));
 
-        // 2b. Uncached Link (original direct stream link)
-        finalStreams.add(ScrapedStream(
+        final directStream = ScrapedStream(
           name: directEnriched['name']!,
           title: '${directEnriched['title']}\n🌐 Original Direct Hoster Link (Uncached)',
           url: directStreamUrl,
@@ -311,10 +389,12 @@ class ScraperEngine {
           provider: providerName,
           quality: q,
           subtitles: subList,
-        ));
+        );
+        finalStreams.add(directStream);
+        streamDedupeMap[rawUrl] = directStream;
       } else {
         // ── 3. Standard Non-Hoster / Direct Stream (1 link) ──
-        finalStreams.add(ScrapedStream(
+        final directStream = ScrapedStream(
           name: directEnriched['name']!,
           title: directEnriched['title']!,
           url: directStreamUrl,
@@ -322,25 +402,102 @@ class ScraperEngine {
           provider: providerName,
           quality: q,
           subtitles: subList,
-        ));
+        );
+        finalStreams.add(directStream);
+        streamDedupeMap[rawUrl] = directStream;
       }
     }
 
-    // Sort: Resolution first (4K > 1080p > 720p > 480p), then Cached > Cache > Direct
-    finalStreams.sort((a, b) => _streamRank(b).compareTo(_streamRank(a)));
+    // ── Stream Filtering Profile: Exclude CAMs when HD content exists ──
+    if (cfg.excludeCams) {
+      final hasHighQuality = finalStreams.any((s) {
+        final q = s.quality?.toUpperCase() ?? '';
+        final n = s.name.toUpperCase();
+        return q.contains('1080') || q.contains('720') || q.contains('4K') || n.contains('WEB-DL') || n.contains('BLURAY') || n.contains('REMUX');
+      });
+      if (hasHighQuality) {
+        finalStreams.removeWhere((s) {
+          final text = '${s.name} ${s.title} ${s.quality}'.toUpperCase();
+          return text.contains('[CAM]') ||
+              text.contains('[TELESYNC]') ||
+              text.contains('[TELECINE]') ||
+              text.contains('[PREDVD]') ||
+              text.contains('HDCAM');
+        });
+      }
+    }
+
+    // ── Stream Filtering Profile: Max Resolution Cap ──
+    if (cfg.maxResolution == '1080p') {
+      finalStreams.removeWhere((s) {
+        final q = s.quality?.toUpperCase() ?? '';
+        final n = s.name.toUpperCase();
+        return q.contains('4K') || q.contains('2160') || n.contains('[4K]');
+      });
+    } else if (cfg.maxResolution == '720p') {
+      finalStreams.removeWhere((s) {
+        final q = s.quality?.toUpperCase() ?? '';
+        final n = s.name.toUpperCase();
+        return q.contains('4K') || q.contains('2160') || q.contains('1080') || n.contains('[4K]') || n.contains('[FHD]') || n.contains('[1080P]');
+      });
+    }
+
+    // ── Stream Sorting: Preferred Audio Language & Resolution ──
+    final prefLang = cfg.preferredLanguage.toLowerCase().trim();
+    finalStreams.sort((a, b) => _streamRank(b, prefLang).compareTo(_streamRank(a, prefLang)));
 
     print('[ScraperEngine] Found ${finalStreams.length} stream(s) for "${meta.title}".');
     return finalStreams;
   }
 
-  static int _streamRank(ScrapedStream s) {
+  static Future<bool> _probeDirectLink(String url) async {
+    try {
+      final uri = Uri.parse(url);
+      final req = await _probeClient.headUrl(uri).timeout(const Duration(milliseconds: 1200));
+      final res = await req.close().timeout(const Duration(milliseconds: 1200));
+      await res.drain<void>();
+      if (res.statusCode == 404 || res.statusCode == 410) {
+        return false;
+      }
+      return true;
+    } catch (_) {
+      // If HEAD is blocked or timed out, assume alive rather than false-positive dropping
+      return true;
+    }
+  }
+
+  static int _streamRank(ScrapedStream s, String prefLang) {
     int rank = _qualityRank(s.quality) * 10;
+
+    // Preferred Language boost (+100 points)
+    if (prefLang.isNotEmpty && prefLang != 'any') {
+      final text = '${s.name} ${s.title}'.toLowerCase();
+      if (prefLang == 'dual' || prefLang == 'multi') {
+        if (text.contains('dual audio') || text.contains('multi audio')) {
+          rank += 100;
+        }
+      } else if (text.contains(prefLang)) {
+        rank += 100;
+      }
+    }
+
+    // Quality rip bonus
+    final ripUpper = '${s.name} ${s.title}'.toUpperCase();
+    if (ripUpper.contains('[REMUX]')) {
+      rank += 8;
+    } else if (ripUpper.contains('[BLURAY]')) {
+      rank += 6;
+    } else if (ripUpper.contains('[WEB-DL]')) {
+      rank += 4;
+    }
+
+    // Cache source bonus
     if (s.name.contains('[Cached]')) {
-      rank += 3;
+      rank += 30;
     } else if (s.name.contains('[Cache]')) {
-      rank += 2;
+      rank += 15;
     } else {
-      rank += 1;
+      rank += 5;
     }
     return rank;
   }

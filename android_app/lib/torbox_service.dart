@@ -35,30 +35,53 @@ class TorboxService {
 
   /// Checks if an API key is valid and returns user plan information
   Future<Map<String, dynamic>> validateAccount(String apiKey) async {
-    if (apiKey.isEmpty) {
+    final key = apiKey.trim();
+    if (key.isEmpty) {
       return {'valid': false, 'message': 'API key is empty'};
     }
     try {
       final res = await http.get(
         Uri.parse('$_apiBase/user/me'),
-        headers: _headers(apiKey),
-      ).timeout(const Duration(seconds: 5));
+        headers: _headers(key),
+      ).timeout(const Duration(seconds: 7));
 
-      if (res.statusCode == 200) {
-        final data = jsonDecode(res.body);
-        if (data is Map && data['success'] == true) {
-          final userData = data['data'] ?? {};
-          final plan = userData['plan'] ?? 'standard';
-          final email = userData['email'] ?? 'Active User';
-          return {
-            'valid': true,
-            'email': email,
-            'plan': plan,
-            'message': 'Connected to Torbox ($plan plan)',
-          };
+      final data = jsonDecode(res.body);
+      if (res.statusCode == 200 && data is Map && (data['success'] == true || data['data'] != null)) {
+        final userData = data['data'] is Map ? data['data'] as Map : {};
+        var rawPlan = userData['plan'];
+        String planStr = 'Standard';
+        if (rawPlan is int) {
+          switch (rawPlan) {
+            case 0:
+              planStr = 'Free';
+              break;
+            case 1:
+              planStr = 'Essential';
+              break;
+            case 2:
+              planStr = 'Pro';
+              break;
+            case 3:
+              planStr = 'Standard';
+              break;
+            default:
+              planStr = 'Tier $rawPlan';
+          }
+        } else if (rawPlan != null && rawPlan.toString().isNotEmpty) {
+          planStr = rawPlan.toString();
         }
+        final email = userData['email']?.toString() ?? 'Active User';
+        final expires = userData['expires_at']?.toString();
+        return {
+          'valid': true,
+          'email': email,
+          'plan': planStr,
+          'expires': expires,
+          'message': 'Connected to Torbox ($planStr plan)',
+        };
       }
-      return {'valid': false, 'message': 'Invalid API Key (HTTP ${res.statusCode})'};
+      final errorMsg = data is Map ? (data['detail'] ?? data['error'] ?? 'HTTP ${res.statusCode}') : 'HTTP ${res.statusCode}';
+      return {'valid': false, 'message': 'Invalid API Key ($errorMsg)'};
     } catch (e) {
       return {'valid': false, 'message': 'Connection error: $e'};
     }
@@ -94,35 +117,63 @@ class TorboxService {
     return _cachedHosters ?? [];
   }
 
-  /// Checks if a direct link or web hoster link is cached on Torbox servers
+  /// Checks if a single direct link or web hoster link is cached on Torbox servers
   Future<bool> checkCached(String url, String apiKey) async {
-    if (apiKey.isEmpty) return false;
+    final batch = await checkCachedBatch([url], apiKey);
+    return batch[url.trim()] ?? false;
+  }
 
-    final hash = md5.convert(utf8.encode(url.trim())).toString();
-    if (_cacheLookup.containsKey(hash)) {
-      return _cacheLookup[hash]!;
+  /// Batch checks direct links/web hoster links on TorBox servers in 1 fast API request
+  Future<Map<String, bool>> checkCachedBatch(List<String> urls, String apiKey) async {
+    if (apiKey.isEmpty || urls.isEmpty) return {};
+
+    final results = <String, bool>{};
+    final uncached = <String, String>{}; // md5 -> url
+
+    for (final url in urls) {
+      final clean = url.trim();
+      if (clean.isEmpty) continue;
+      final hash = md5.convert(utf8.encode(clean)).toString();
+      if (_cacheLookup.containsKey(hash)) {
+        results[clean] = _cacheLookup[hash]!;
+      } else {
+        uncached[hash] = clean;
+      }
     }
 
-    try {
-      final uri = Uri.parse('$_apiBase/webdl/checkcached?hash=$hash&format=object');
-      final res = await http.get(
-        uri,
-        headers: _headers(apiKey),
-      ).timeout(const Duration(seconds: 3));
+    if (uncached.isNotEmpty) {
+      final hashList = uncached.keys.toList();
+      for (var i = 0; i < hashList.length; i += 80) {
+        final chunk = hashList.skip(i).take(80).toList();
+        final hashParam = chunk.join(',');
+        try {
+          final uri = Uri.parse('$_apiBase/webdl/checkcached?hash=$hashParam&format=object');
+          final res = await http.get(
+            uri,
+            headers: _headers(apiKey),
+          ).timeout(const Duration(seconds: 4));
 
-      if (res.statusCode == 200) {
-        final data = jsonDecode(res.body);
-        if (data is Map && data['data'] is Map) {
-          final hashData = data['data'][hash];
-          final isCached = hashData != null && (hashData is Map || hashData == true);
-          _cacheLookup[hash] = isCached;
-          return isCached;
-        }
+          if (res.statusCode == 200) {
+            final data = jsonDecode(res.body);
+            if (data is Map && data['data'] is Map) {
+              final dataMap = data['data'] as Map;
+              for (final h in chunk) {
+                final val = dataMap[h];
+                final isCached = val != null && (val is Map || val == true);
+                _cacheLookup[h] = isCached;
+                final orig = uncached[h];
+                if (orig != null) results[orig] = isCached;
+              }
+            }
+          }
+        } catch (_) {}
       }
-    } catch (_) {}
+    }
 
-    _cacheLookup[hash] = false;
-    return false;
+    for (final url in urls) {
+      results.putIfAbsent(url.trim(), () => false);
+    }
+    return results;
   }
 
   /// Uploads / sends a web download link to Torbox to cache/download it
@@ -134,10 +185,11 @@ class TorboxService {
       final createUrl = Uri.parse('$_apiBase/webdl/createwebdownload');
       final res = await http.post(
         createUrl,
-        headers: _headers(apiKey, isJson: false),
-        body: {
+        headers: _headers(apiKey, isJson: true),
+        body: jsonEncode({
           'link': url.trim(),
-        },
+          'url': url.trim(),
+        }),
       ).timeout(const Duration(seconds: 8));
 
       final data = jsonDecode(res.body);

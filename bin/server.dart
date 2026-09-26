@@ -287,7 +287,15 @@ Future<void> _handleRequest(HttpRequest request, String lanIp, int port) async {
       await AddonConfig.instance.save();
       final account = await TorboxService.instance.validateAccount(apiKey);
       request.response.headers.contentType = ContentType.json;
-      request.response.write(jsonEncode({'success': true, 'account': account}));
+      request.response.write(jsonEncode({
+        'success': true,
+        'valid': account['valid'] == true,
+        'email': account['email'],
+        'plan': account['plan'],
+        'expires': account['expires'],
+        'message': account['message'],
+        'account': account,
+      }));
       await request.response.close();
       return;
     }
@@ -311,6 +319,32 @@ Future<void> _handleRequest(HttpRequest request, String lanIp, int port) async {
       final uploadRes = await TorboxService.instance.uploadToTorbox(url, apiKey);
       request.response.headers.contentType = ContentType.json;
       request.response.write(jsonEncode(uploadRes));
+      await request.response.close();
+      return;
+    }
+
+    // ── 5e. API: Save Playback & Filtering Settings: POST /api/settings ────
+    if (path == '/api/settings' && method == 'POST') {
+      final bodyStr = await utf8.decodeStream(request);
+      final bodyJson = jsonDecode(bodyStr) as Map;
+      if (bodyJson.containsKey('excludeCams')) {
+        AddonConfig.instance.excludeCams = bodyJson['excludeCams'] == true;
+      }
+      if (bodyJson.containsKey('maxResolution')) {
+        AddonConfig.instance.maxResolution = bodyJson['maxResolution'].toString();
+      }
+      if (bodyJson.containsKey('preferredLanguage')) {
+        AddonConfig.instance.preferredLanguage = bodyJson['preferredLanguage'].toString();
+      }
+      if (bodyJson.containsKey('enableDeduplication')) {
+        AddonConfig.instance.enableDeduplication = bodyJson['enableDeduplication'] == true;
+      }
+      if (bodyJson.containsKey('enableDeadLinkFilter')) {
+        AddonConfig.instance.enableDeadLinkFilter = bodyJson['enableDeadLinkFilter'] == true;
+      }
+      await AddonConfig.instance.save();
+      request.response.headers.contentType = ContentType.json;
+      request.response.write(jsonEncode({'success': true}));
       await request.response.close();
       return;
     }

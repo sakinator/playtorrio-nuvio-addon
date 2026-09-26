@@ -1,4 +1,4 @@
-name: Build Android APK (TV & Mobile)
+name: Build Releases (Android APK & Windows Executable)
 
 on:
   push:
@@ -11,8 +11,8 @@ permissions:
   contents: write
 
 jobs:
-  build:
-    name: Build Release APK
+  build-android:
+    name: Build Android APK (TV & Mobile)
     runs-on: ubuntu-latest
 
     steps:
@@ -52,11 +52,73 @@ jobs:
           path: android_app/build/app/outputs/flutter-apk/sakinator-MegaScraper.apk
           if-no-files-found: error
 
-      - name: Create Release (on tag or manual release)
-        if: startsWith(github.ref, 'refs/tags/v')
+  build-windows:
+    name: Build Windows Standalone Executable
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Set up Dart SDK
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+
+      - name: Install Dependencies
+        run: dart pub get
+
+      - name: Compile Windows Standalone Executable
+        run: dart compile exe bin/server.dart -o sakinator-MegaScraper.exe
+
+      - name: Package Windows Release Archive
+        shell: powershell
+        run: |
+          New-Item -ItemType Directory -Path dist -Force
+          Copy-Item sakinator-MegaScraper.exe dist/
+          Copy-Item badges.json dist/ -ErrorAction SilentlyContinue
+          Copy-Item README.md dist/ -ErrorAction SilentlyContinue
+          Copy-Item start.bat dist/ -ErrorAction SilentlyContinue
+          Copy-Item start.ps1 dist/ -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Path dist/data -Force
+          Copy-Item data/config.json dist/data/ -ErrorAction SilentlyContinue
+          Compress-Archive -Path dist/* -DestinationPath sakinator-MegaScraper-windows-x64.zip -Force
+
+      - name: Upload Windows Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sakinator-MegaScraper-windows
+          path: sakinator-MegaScraper-windows-x64.zip
+          if-no-files-found: error
+
+  release:
+    name: Publish Release (Android & Windows)
+    needs: [build-android, build-windows]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+
+    steps:
+      - name: Download Android Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: sakinator-MegaScraper-apk
+          path: release-assets/
+
+      - name: Download Windows Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: sakinator-MegaScraper-windows
+          path: release-assets/
+
+      - name: Create or Update GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: android_app/build/app/outputs/flutter-apk/sakinator-MegaScraper.apk
+          files: |
+            release-assets/sakinator-MegaScraper.apk
+            release-assets/sakinator-MegaScraper-windows-x64.zip
           name: Release ${{ github.ref_name }}
           draft: false
           prerelease: false

@@ -11,7 +11,13 @@ class WebUI {
     final enabledCount = providers.where((p) => p['enabled'] == true).length;
     final manifestLocal = 'http://localhost:$port/manifest.json';
     final manifestLan = 'http://$localIp:$port/manifest.json';
-    final torboxApiKey = AddonConfig.instance.torboxApiKey;
+    final cfg = AddonConfig.instance;
+    final torboxApiKey = cfg.torboxApiKey;
+    final excludeCamsChecked = cfg.excludeCams ? 'checked' : '';
+    final dedupeChecked = cfg.enableDeduplication ? 'checked' : '';
+    final deadLinkChecked = cfg.enableDeadLinkFilter ? 'checked' : '';
+    final maxRes = cfg.maxResolution;
+    final prefLang = cfg.preferredLanguage;
 
     final providerCheckboxes = providers.map((p) {
       final id = p['id'];
@@ -497,6 +503,74 @@ class WebUI {
       </div>
     </div>
 
+    <!-- Stream Filtering Profiles & Optimization -->
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 14px; flex-wrap:wrap; gap:8px;">
+        <h2>🎛️ Stream Filtering Profiles & Optimization</h2>
+        <button class="btn btn-primary" id="btnSaveSettings" onclick="saveSettings()">💾 Save Settings</button>
+      </div>
+      <p style="color:var(--text-muted); margin-bottom:16px; font-size:0.9rem;">
+        Fine-tune how streams are filtered, deduplicated, and ranked in your Nuvio drawer.
+      </p>
+
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:16px; margin-bottom:16px;">
+        <div style="background:#090d13; border:1px solid var(--border); border-radius:8px; padding:14px;">
+          <label style="font-weight:600; display:block; margin-bottom:6px;">Preferred Audio Language:</label>
+          <select id="prefLangSelect" style="width:100%; padding:8px; background:#161b22; border:1px solid var(--border); border-radius:6px; color:var(--text); font-size:0.88rem;">
+            <option value="any" ${prefLang == 'any' ? 'selected' : ''}>Any / Default Order</option>
+            <option value="hindi" ${prefLang == 'hindi' ? 'selected' : ''}>🇮🇳 Hindi</option>
+            <option value="english" ${prefLang == 'english' ? 'selected' : ''}>🇬🇧 English</option>
+            <option value="dual" ${prefLang == 'dual' ? 'selected' : ''}>🌐 Dual Audio / Multi Audio</option>
+            <option value="tamil" ${prefLang == 'tamil' ? 'selected' : ''}>🇮🇳 Tamil</option>
+            <option value="telugu" ${prefLang == 'telugu' ? 'selected' : ''}>🇮🇳 Telugu</option>
+            <option value="malayalam" ${prefLang == 'malayalam' ? 'selected' : ''}>🇮🇳 Malayalam</option>
+            <option value="kannada" ${prefLang == 'kannada' ? 'selected' : ''}>🇮🇳 Kannada</option>
+            <option value="bengali" ${prefLang == 'bengali' ? 'selected' : ''}>🇮🇳 Bengali</option>
+            <option value="punjabi" ${prefLang == 'punjabi' ? 'selected' : ''}>🇮🇳 Punjabi</option>
+            <option value="marathi" ${prefLang == 'marathi' ? 'selected' : ''}>🇮🇳 Marathi</option>
+            <option value="gujarati" ${prefLang == 'gujarati' ? 'selected' : ''}>🇮🇳 Gujarati</option>
+          </select>
+          <div style="color:var(--text-muted); font-size:0.78rem; margin-top:6px;">Boosts matching releases directly to the top of the stream list.</div>
+        </div>
+
+        <div style="background:#090d13; border:1px solid var(--border); border-radius:8px; padding:14px;">
+          <label style="font-weight:600; display:block; margin-bottom:6px;">Max Resolution Cap:</label>
+          <select id="maxResSelect" style="width:100%; padding:8px; background:#161b22; border:1px solid var(--border); border-radius:6px; color:var(--text); font-size:0.88rem;">
+            <option value="all" ${maxRes == 'all' ? 'selected' : ''}>Unlimited (4K / 2160p Allowed)</option>
+            <option value="1080p" ${maxRes == '1080p' ? 'selected' : ''}>1080p Max (Filters out 4K for lower bandwidth)</option>
+            <option value="720p" ${maxRes == '720p' ? 'selected' : ''}>720p Max (Fastest playback & lowest data)</option>
+          </select>
+          <div style="color:var(--text-muted); font-size:0.78rem; margin-top:6px;">Prevents high-bitrate 4K streams on smaller devices or slow WiFi.</div>
+        </div>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
+          <input type="checkbox" id="chkExcludeCams" $excludeCamsChecked style="width:18px; height:18px;">
+          <div>
+            <strong style="color:var(--text);">Clean Drawer Mode (Exclude CAMs & TeleSync)</strong>
+            <div style="color:var(--text-muted); font-size:0.8rem;">Automatically strips CAM, TS, PreDVD, and Telesync copies when high-grade WEB-DL or BluRay copies exist.</div>
+          </div>
+        </label>
+
+        <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
+          <input type="checkbox" id="chkDedupe" $dedupeChecked style="width:18px; height:18px;">
+          <div>
+            <strong style="color:var(--text);">Smart Stream Deduplication</strong>
+            <div style="color:var(--text-muted); font-size:0.8rem;">Merges identical CDN streams from multiple providers into a single card with combined tags.</div>
+          </div>
+        </label>
+
+        <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
+          <input type="checkbox" id="chkDeadLink" $deadLinkChecked style="width:18px; height:18px;">
+          <div>
+            <strong style="color:var(--text);">Ultra-Fast Dead-Link Filter</strong>
+            <div style="color:var(--text-muted); font-size:0.8rem;">Runs a rapid 1200ms parallel HEAD probe on direct stream links to eliminate 404/broken file hosters.</div>
+          </div>
+        </label>
+      </div>
+    </div>
+
     <!-- Scraper Providers -->
     <div class="card">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 14px; flex-wrap:wrap; gap:8px;">
@@ -657,28 +731,57 @@ class WebUI {
           body: JSON.stringify({ apiKey: key })
         });
         const data = await res.json();
-        if (data.success) {
-          if (data.valid) {
-            badge.innerText = '✅ ' + (data.plan ? data.plan.toUpperCase() : 'Connected');
-            badge.style.background = 'rgba(35, 134, 54, 0.3)';
-            badge.style.color = '#3fb950';
-            info.style.display = 'block';
-            info.innerHTML = '<strong>Email:</strong> ' + escapeHtml(data.email) + ' | <strong>Plan:</strong> ' + escapeHtml(data.plan) + (data.expires ? ' (Expires: ' + escapeHtml(data.expires) + ')' : '');
-            showToast('✅ TorBox Connected: ' + data.plan);
-          } else {
-            badge.innerText = '❌ Invalid Key';
-            badge.style.background = 'rgba(248, 81, 73, 0.3)';
-            badge.style.color = '#f85149';
-            info.style.display = 'block';
-            info.innerHTML = '<span style="color:#f85149;">' + escapeHtml(data.message) + '</span>';
-            showToast('❌ Invalid TorBox API Key');
-          }
+        const acc = (data.account && data.account.valid !== undefined) ? data.account : data;
+        if (data.success && acc.valid) {
+          badge.innerText = '✅ ' + (acc.plan ? acc.plan.toUpperCase() : 'Connected');
+          badge.style.background = 'rgba(35, 134, 54, 0.3)';
+          badge.style.color = '#3fb950';
+          info.style.display = 'block';
+          info.innerHTML = '<strong>Account:</strong> ' + escapeHtml(acc.email || 'Active User') + ' | <strong>Plan:</strong> ' + escapeHtml(acc.plan || 'Standard') + (acc.expires ? ' (Expires: ' + escapeHtml(acc.expires) + ')' : '');
+          showToast('✅ TorBox Connected: ' + (acc.plan || 'Active'));
+        } else {
+          badge.innerText = '❌ Invalid Key';
+          badge.style.background = 'rgba(248, 81, 73, 0.3)';
+          badge.style.color = '#f85149';
+          info.style.display = 'block';
+          info.innerHTML = '<span style="color:#f85149;">' + escapeHtml(acc.message || data.message || 'Invalid API Key') + '</span>';
+          showToast('❌ Invalid TorBox API Key' + (acc.message ? ': ' + acc.message : ''));
         }
       } catch (e) {
-        showToast('Error validating TorBox key');
+        showToast('Error validating TorBox key: ' + e);
       } finally {
         btn.disabled = false;
         btn.innerText = '💾 Save & Validate';
+      }
+    }
+
+    async function saveSettings() {
+      const btn = document.getElementById('btnSaveSettings');
+      btn.disabled = true;
+      btn.innerText = 'Saving...';
+      try {
+        const res = await fetch('/api/settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            excludeCams: document.getElementById('chkExcludeCams').checked,
+            maxResolution: document.getElementById('maxResSelect').value,
+            preferredLanguage: document.getElementById('prefLangSelect').value,
+            enableDeduplication: document.getElementById('chkDedupe').checked,
+            enableDeadLinkFilter: document.getElementById('chkDeadLink').checked,
+          })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast('✅ Playback & Filtering Settings Saved!');
+        } else {
+          showToast('❌ Error saving settings');
+        }
+      } catch (e) {
+        showToast('Error saving settings: ' + e);
+      } finally {
+        btn.disabled = false;
+        btn.innerText = '💾 Save Settings';
       }
     }
 

@@ -13,6 +13,11 @@ class BadgeService {
     BadgeFilter(id: 'q-bluray', groupId: 'grl', name: 'BluRay', priority: 80, pattern: RegExp(r'\b(?:bluray|blu[\s._-]?ray|bdrip)\b', caseSensitive: false)),
     BadgeFilter(id: 'q-webdl', groupId: 'grl', name: 'WEB-DL', priority: 60, pattern: RegExp(r'\b(?:web[\s._-]?dl|webdl)\b', caseSensitive: false)),
     BadgeFilter(id: 'q-webrip', groupId: 'grl', name: 'WEBRip', priority: 40, pattern: RegExp(r'\bweb[\s._-]?rip\b', caseSensitive: false)),
+    BadgeFilter(id: 'q-hdtv', groupId: 'grl', name: 'HDTV', priority: 30, pattern: RegExp(r'\bhdtv\b', caseSensitive: false)),
+    BadgeFilter(id: 'q-predvd', groupId: 'grl', name: 'PreDVD', priority: 20, pattern: RegExp(r'\b(?:predvd|pre-dvd|dvdrip)\b', caseSensitive: false)),
+    BadgeFilter(id: 'q-tc', groupId: 'grl', name: 'TeleCine', priority: 15, pattern: RegExp(r'\b(?:tc|telecine|hdtc)\b', caseSensitive: false)),
+    BadgeFilter(id: 'q-ts', groupId: 'grl', name: 'TeleSync', priority: 10, pattern: RegExp(r'\b(?:ts|telesync|hdts|hd-ts)\b', caseSensitive: false)),
+    BadgeFilter(id: 'q-cam', groupId: 'grl', name: 'CAM', priority: 5, pattern: RegExp(r'\b(?:cam|camrip|hdcam|hd-cam)\b', caseSensitive: false)),
 
     // Visual Enhancements (gv)
     BadgeFilter(id: 'v-atmos-dv', groupId: 'gv', name: 'Atmos+DV', priority: 100, pattern: RegExp(r'(?=.*atmos)(?=.*(?:dv|dovi|dolby[\s._-]?vision))', caseSensitive: false)),
@@ -20,6 +25,7 @@ class BadgeService {
     BadgeFilter(id: 'v-hdr10p', groupId: 'gv', name: 'HDR10+', priority: 80, pattern: RegExp(r'hdr[\s._-]?10[\s._-]?(?:\+|plus)', caseSensitive: false)),
     BadgeFilter(id: 'v-hdr10', groupId: 'gv', name: 'HDR10', priority: 70, pattern: RegExp(r'hdr[\s._-]?10', caseSensitive: false)),
     BadgeFilter(id: 'v-hdr', groupId: 'gv', name: 'HDR', priority: 60, pattern: RegExp(r'\b(?:hdr|hlg|pq)\b', caseSensitive: false)),
+    BadgeFilter(id: 'v-sdr', groupId: 'gv', name: 'SDR', priority: 55, pattern: RegExp(r'\bsdr\b', caseSensitive: false)),
     BadgeFilter(id: 'v-imax-e', groupId: 'gv', name: 'IMAX Enhanced', priority: 50, pattern: RegExp(r'imax[\s._-]?enhanced', caseSensitive: false)),
     BadgeFilter(id: 'v-imax', groupId: 'gv', name: 'IMAX', priority: 40, pattern: RegExp(r'\bimax\b', caseSensitive: false)),
     BadgeFilter(id: 'v-3d', groupId: 'gv', name: '3D', priority: 30, pattern: RegExp(r'\b(?:3d|sbs|half[\s._-]?sbs|hsbs)\b', caseSensitive: false)),
@@ -28,6 +34,7 @@ class BadgeService {
     BadgeFilter(id: 'c-av1', groupId: 'gvc', name: 'AV1', priority: 100, pattern: RegExp(r'\bav1\b', caseSensitive: false)),
     BadgeFilter(id: 'c-hevc', groupId: 'gvc', name: 'HEVC', priority: 80, pattern: RegExp(r'\b(?:x265|hevc|h\.?265)\b', caseSensitive: false)),
     BadgeFilter(id: 'c-avc', groupId: 'gvc', name: 'AVC', priority: 60, pattern: RegExp(r'\b(?:x264|avc|h\.?264)\b', caseSensitive: false)),
+    BadgeFilter(id: 'c-10bit', groupId: 'gvc', name: '10-Bit', priority: 50, pattern: RegExp(r'\b(?:10[\s._-]?bit|hi10p)\b', caseSensitive: false)),
 
     // Audio Codec (ga) - mutually exclusive
     BadgeFilter(id: 'a-truehd', groupId: 'ga', name: 'TrueHD', priority: 100, pattern: RegExp(r'\btrue[\s._-]?hd\b', caseSensitive: false)),
@@ -55,20 +62,35 @@ class BadgeService {
     BadgeFilter(id: 'l-kan', groupId: 'gl', name: 'Kannada', priority: 80, pattern: RegExp(r'\bkannada\b', caseSensitive: false)),
     BadgeFilter(id: 'l-ben', groupId: 'gl', name: 'Bengali', priority: 80, pattern: RegExp(r'\bbengali\b', caseSensitive: false)),
     BadgeFilter(id: 'l-pun', groupId: 'gl', name: 'Punjabi', priority: 80, pattern: RegExp(r'\bpunjabi\b', caseSensitive: false)),
+    BadgeFilter(id: 'l-mar', groupId: 'gl', name: 'Marathi', priority: 80, pattern: RegExp(r'\bmarathi\b', caseSensitive: false)),
+    BadgeFilter(id: 'l-guj', groupId: 'gl', name: 'Gujarati', priority: 80, pattern: RegExp(r'\bgujarati\b', caseSensitive: false)),
+    BadgeFilter(id: 'l-bho', groupId: 'gl', name: 'Bhojpuri', priority: 80, pattern: RegExp(r'\bbhojpuri\b', caseSensitive: false)),
+    BadgeFilter(id: 'l-urd', groupId: 'gl', name: 'Urdu', priority: 80, pattern: RegExp(r'\burdu\b', caseSensitive: false)),
     BadgeFilter(id: 'l-eng', groupId: 'gl', name: 'English', priority: 70, pattern: RegExp(r'\b(?:english|eng)\b', caseSensitive: false)),
     BadgeFilter(id: 'l-jap', groupId: 'gl', name: 'Japanese', priority: 70, pattern: RegExp(r'\b(?:japanese|jap)\b', caseSensitive: false)),
 
-    // Stream Source Brands (gs)
+    // Stream Source Brands (gs) - Global & India Regional OTT
     BadgeFilter(id: 's-nflx', groupId: 'gs', name: 'NETFLIX', priority: 50, pattern: RegExp(r'\b(?:nflx|netflix)\b', caseSensitive: false)),
     BadgeFilter(id: 's-amzn', groupId: 'gs', name: 'PRIME', priority: 50, pattern: RegExp(r'\b(?:amzn|prime[\s._-]?video)\b', caseSensitive: false)),
     BadgeFilter(id: 's-atvp', groupId: 'gs', name: 'APPLE TV+', priority: 50, pattern: RegExp(r'\b(?:atvp|apple[\s._-]?tv)\b', caseSensitive: false)),
     BadgeFilter(id: 's-dsnp', groupId: 'gs', name: 'DISNEY+', priority: 50, pattern: RegExp(r'\b(?:dsnp|disney[\s._-]?(?:\+|plus))\b', caseSensitive: false)),
     BadgeFilter(id: 's-hmax', groupId: 'gs', name: 'MAX', priority: 50, pattern: RegExp(r'\b(?:hmax|hbomax|hbo[\s._-]?max)\b', caseSensitive: false)),
     BadgeFilter(id: 's-hulu', groupId: 'gs', name: 'HULU', priority: 50, pattern: RegExp(r'\bhulu\b', caseSensitive: false)),
-    BadgeFilter(id: 's-hotstar', groupId: 'gs', name: 'HOTSTAR', priority: 50, pattern: RegExp(r'\b(?:hotstar|disney[\s._-]?hotstar)\b', caseSensitive: false)),
+    BadgeFilter(id: 's-hotstar', groupId: 'gs', name: 'HOTSTAR', priority: 50, pattern: RegExp(r'\b(?:hotstar|disney[\s._-]?hotstar|jio[\s._-]?hotstar)\b', caseSensitive: false)),
     BadgeFilter(id: 's-sonyliv', groupId: 'gs', name: 'SONYLIV', priority: 50, pattern: RegExp(r'\bsonyliv\b', caseSensitive: false)),
     BadgeFilter(id: 's-zee5', groupId: 'gs', name: 'ZEE5', priority: 50, pattern: RegExp(r'\bzee5\b', caseSensitive: false)),
     BadgeFilter(id: 's-jio', groupId: 'gs', name: 'JIOCINEMA', priority: 50, pattern: RegExp(r'\bjio(?:cinema)?\b', caseSensitive: false)),
+    BadgeFilter(id: 's-sunnxt', groupId: 'gs', name: 'SUNNXT', priority: 50, pattern: RegExp(r'\b(?:sun[\s._-]?nxt|sunnxt)\b', caseSensitive: false)),
+    BadgeFilter(id: 's-aha', groupId: 'gs', name: 'AHA', priority: 50, pattern: RegExp(r'\b(?:aha|ahavideo)\b', caseSensitive: false)),
+    BadgeFilter(id: 's-hoichoi', groupId: 'gs', name: 'HOICHOI', priority: 50, pattern: RegExp(r'\bhoichoi\b', caseSensitive: false)),
+    BadgeFilter(id: 's-manorama', groupId: 'gs', name: 'MANORAMAMAX', priority: 50, pattern: RegExp(r'\b(?:manorama[\s._-]?max|manoramamax)\b', caseSensitive: false)),
+    BadgeFilter(id: 's-chaupal', groupId: 'gs', name: 'CHAUPAL', priority: 50, pattern: RegExp(r'\bchaupal\b', caseSensitive: false)),
+    BadgeFilter(id: 's-planetm', groupId: 'gs', name: 'PLANET MARATHI', priority: 50, pattern: RegExp(r'\b(?:planet[\s._-]?marathi)\b', caseSensitive: false)),
+    BadgeFilter(id: 's-mx', groupId: 'gs', name: 'MX PLAYER', priority: 50, pattern: RegExp(r'\b(?:mx[\s._-]?player|mxplayer)\b', caseSensitive: false)),
+    BadgeFilter(id: 's-lionsgate', groupId: 'gs', name: 'LIONSGATE', priority: 50, pattern: RegExp(r'\b(?:lionsgate|lionsgateplay)\b', caseSensitive: false)),
+    BadgeFilter(id: 's-shemaroo', groupId: 'gs', name: 'SHEMAROOME', priority: 50, pattern: RegExp(r'\b(?:shemaroo(?:me)?)\b', caseSensitive: false)),
+    BadgeFilter(id: 's-voot', groupId: 'gs', name: 'VOOT', priority: 50, pattern: RegExp(r'\bvoot\b', caseSensitive: false)),
+    BadgeFilter(id: 's-eros', groupId: 'gs', name: 'EROS NOW', priority: 50, pattern: RegExp(r'\b(?:eros[\s._-]?now|erosnow)\b', caseSensitive: false)),
   ];
 
   /// Detects matching badges from the input text with group exclusivity

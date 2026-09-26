@@ -9,18 +9,25 @@ A high-performance local Stremio & Nuvio-compatible addon server featuring **56 
 - **100% Non-Torrent (Zero P2P):** No seeders, no torrent clients, and no IP seeding exposure. Streams directly from fast cloud storage and HTTP/HLS CDNs.
 - **56 Cloud Scraper Providers:** Extracts streams across 56 scrapers including *4KHDHub, Vadapav, HindMoviez, RiveStream, LookMovie, VidLink, Movy, Videasy, Cinejoy, FlyStream, X-Downloader, Vuflix, FSOnline, KissKH, Megasource, Nova, Purstream*, and more.
 - **TorBox Debrid Integration:**
-  - **Instant Cache Detection:** Checks TorBox servers in real-time to see if scraped hoster links (HubCloud, PixelDrain, DriveSeed, GoFile, etc.) are already cached.
+  - **Batch Cache Checking:** Instantly checks up to 100 links in a single API query (`/webdl/checkcached`), cutting scraper turnaround by 2-3 seconds.
   - **1-Click Cloud Caching:** Direct "⚡ Cache to TorBox" links in Nuvio and the Web Dashboard. Submits uncached links to TorBox's WebDL downloader in 1 click.
   - **High-Speed CDN Playback:** Streams cached hoster files through TorBox's ultra-fast Indian and global CDN nodes with full byte-range HTTP 206 seeking in Nuvio (MPV player).
   - **Strict Privacy Guarantee:** Your TorBox API key is strictly manual-input only. It is saved in gitignored `data/config.json` and is **never** auto-scanned from personal directories or leaked in stream titles or GitHub commits.
+- **Short-Term Scrape Cache (12m TTL):** In-memory LRU ring buffer that caches scraped streams for 12 minutes. Repeated playback, switching streams, or backing out in Nuvio is instantaneous (0ms).
+- **Fast Dead-Link Filter:** Rapid 1200ms parallel HEAD probe on direct stream links to purge 404/broken file hoster links before they hit Nuvio.
+- **Stream Filtering Profiles:**
+  - **Clean Drawer Mode:** Automatically strips low-grade CAM, TS, PreDVD, and Telesync releases when high-quality WEB-DL or BluRay copies exist.
+  - **Max Resolution Cap:** Configurable resolution limits (`4K`, `1080p Max`, `720p Max`) for bandwidth-constrained or TV devices.
+  - **Audio Language Prioritization:** Select your preferred audio language (`Hindi`, `English`, `Tamil`, `Telugu`, `Malayalam`, `Kannada`, `Bengali`, `Punjabi`, `Dual Audio`) to boost matching releases to the very top.
+- **Smart Stream Deduplication:** Merges identical CDN streams from multiple providers into a single card with combined tags (e.g. `HubCloud [Direct] (MoviesDrive + Vega)`).
+- **Inbuilt Native Badges & Indian Regional OTT Logos:** Native bracketed headers (`[4K] [Remux] [HDR] [Hindi]`) rendered directly as colored badge pills in Nuvio, with logos for **JioHotstar, SonyLIV, Zee5, JioCinema, SunNXT, Aha, Hoichoi, ManoramaMAX, Chaupal, Planet Marathi, MX Player, Lionsgate, Shemaroo, and Voot**.
 - **4 Rich Media Catalogs:**
   - 🎬 **YouTube Indian Cinema:** Bollywood classics, South Indian Hindi dubbed movies, comedy, and web series.
   - 🌍 **YouTube International:** Curated action, sci-fi, thriller, documentaries, and indie films.
   - 🏛️ **Internet Archive Classics:** Golden Era Hollywood, film noir, silent cinema, classic horror, and vintage Indian cinema.
   - 📺 **Dailymotion Indian & Global:** Hindi movies, dramas, Pakistani serials, and international titles.
-- **NardBadges Visual Quality Tagging:** Automatically matches video resolutions (4K, 1080p, 720p), HDR/Dolby Vision, audio formats (Atmos, DTS:X, 5.1/7.1, AAC), and video codecs (HEVC, AV1, AVC) with high-res badges.
 - **Embedded Streaming Proxy (`/proxy`):** Transparently forwards protected HLS (`.m3u8`) playlists and injects required `Referer`, `Origin`, and `User-Agent` headers so that Nuvio's internal player plays restricted streams without HTTP 403 errors.
-- **Interactive Web Dashboard (`/configure`):** Dark-mode web interface to test scrape titles, toggle scrapers, manage your TorBox key, inspect live supported hosters, and check for updates.
+- **Interactive Web Dashboard (`/configure`):** Dark-mode web interface to test scrape titles, toggle scrapers, manage your TorBox key, configure filtering profiles, inspect live supported hosters, and check for updates.
 - **Android TV & Mobile APK:** Native Flutter client for NVIDIA Shield, Fire TV, Google TV, and Android phones with full D-pad remote navigation and 24/7 background foreground service.
 
 ---
@@ -179,3 +186,31 @@ sakinator-MegaScraper/
 | **XPass** | `xpass` | Multi-server video scraper |
 | **ZxcStream** | `zxcstream` | Multi-source direct provider |
 | *And 10 additional cloud scrapers* | ... | Continuous updates via upstream pipeline |
+
+---
+
+## 🔄 Upstream & Cloudstream Extension Sync
+
+### 1. PlayTorrioV3 Native Scrapers
+`sakinator-MegaScraper` is integrated directly with upstream [ayman708-UX/PlayTorrioV3](https://github.com/ayman708-UX/PlayTorrioV3).
+- To sync latest providers and fixes:
+  - Click **🔄 Check Upstream Updates** in the Web Dashboard (`/configure`), or trigger `POST /api/pipeline/update`.
+  - The server clones upstream, scans `lib/upstream/services/scraper/sites/`, regenerates `scraper_registry.dart`, and hot-reloads all active scrapers without restarting.
+
+### 2. Cloudstream Scrapers & Plugins
+- Native Dart ports of top Cloudstream extractors (*HubCloud, Vega, DriveSeed, Pixeldrain, Mega, 1fichier*) are maintained directly inside `lib/upstream/services/cloudstream/`.
+- In-memory plugin repos can be browsed and refreshed via the embedded `CloudStreamMarketplaceService`.
+
+---
+
+## 🏆 Credits & Acknowledgements
+
+`sakinator-MegaScraper` builds upon incredible open-source innovations across the streaming community:
+
+- **[ayman708-UX / PlayTorrioV3](https://github.com/ayman708-UX/PlayTorrioV3)**: Core Dart scraper models, site extractors, and multi-source scraping architecture.
+- **[Cloudstream 3 Community](https://github.com/recloudstream/cloudstream)** & Extension Authors (*Hexated, Stormunblessed, Hindi Providers*): Pioneering hoster extraction patterns and cloud link bypass techniques.
+- **[Nuvio Team](https://nuvio.app)**: Next-gen TV and desktop streaming player with beautiful native badge pill rendering.
+- **[TorBox](https://torbox.app)**: Exceptional debrid infrastructure, lightning-fast WebDL cloud caching, and high-bandwidth global CDN delivery.
+- **[CNCVerse-Bridge](https://github.com/CNCVerse/Bridge)**: Design inspiration for DNS-over-HTTPS fallback, segment caching, and on-the-fly virtual HLS playlist converter.
+- **[Torrentio](https://torrentio.strem.fun)**, **[MediaFusion](https://github.com/mhdzumair/MediaFusion)**, **[Comet](https://github.com/g0ldy/comet)**, **[AIOStreams](https://github.com/Viren070/AIOStreams)** & **[EasyTorbox](https://github.com/sagetendo/EasyTorbox)**: For shaping modern community debrid streaming workflows and Stremio/Nuvio addon conventions.
+
