@@ -107,7 +107,26 @@ class ScraperEngine {
     final cached = _scrapeCache[key];
     if (cached != null && !cached.isExpired) {
       print('[ScraperEngine] Returning cached scrape for "$key" (${cached.streams.length} stream(s)).');
-      return Future.value(cached.streams);
+      // Adapt local endpoints (/torbox/play, /proxy) to requesting client's localBaseUrl (e.g. LAN TV vs PC localhost)
+      final adapted = cached.streams.map((s) {
+        if (s.url.contains('/torbox/play') || s.url.contains('/proxy')) {
+          final uri = Uri.tryParse(s.url);
+          if (uri != null && (uri.path.startsWith('/torbox/play') || uri.path.startsWith('/proxy'))) {
+            final newUrl = '$localBaseUrl${uri.path}${uri.hasQuery ? '?${uri.query}' : ''}';
+            return ScrapedStream(
+              name: s.name,
+              title: s.title,
+              url: newUrl,
+              behaviorHints: s.behaviorHints,
+              provider: s.provider,
+              quality: s.quality,
+              subtitles: s.subtitles,
+            );
+          }
+        }
+        return s;
+      }).toList();
+      return Future.value(adapted);
     }
 
     // 2. Deduplicate concurrent in-flight requests for the same content

@@ -184,6 +184,17 @@ class ServerService {
     }
   }
 
+  static Map<String, dynamic>? _safeParseJsonMap(String bodyStr) {
+    if (bodyStr.trim().isEmpty) return <String, dynamic>{};
+    try {
+      final decoded = jsonDecode(bodyStr);
+      if (decoded is Map) {
+        return Map<String, dynamic>.from(decoded);
+      }
+    } catch (_) {}
+    return null;
+  }
+
   Future<void> _handleRequest(HttpRequest request, int port) async {
     final path = request.uri.path;
     final method = request.method.toUpperCase();
@@ -408,7 +419,7 @@ class ServerService {
       if (path.startsWith('/api/provider/') && method == 'POST') {
         final providerId = path.replaceFirst('/api/provider/', '');
         final bodyStr = await utf8.decodeStream(request);
-        final bodyJson = jsonDecode(bodyStr) as Map;
+        final bodyJson = _safeParseJsonMap(bodyStr) ?? {};
         final enabled = bodyJson['enabled'] == true;
 
         AddonConfig.instance.toggleProvider(providerId, enabled);
@@ -421,7 +432,7 @@ class ServerService {
       // 5a. Bulk toggle providers: POST /api/providers/bulk
       if (path == '/api/providers/bulk' && method == 'POST') {
         final bodyStr = await utf8.decodeStream(request);
-        final bodyJson = jsonDecode(bodyStr) as Map;
+        final bodyJson = _safeParseJsonMap(bodyStr) ?? {};
         final ids = (bodyJson['ids'] as List?)?.map((e) => e.toString()).toList() ?? [];
         final enabled = bodyJson['enabled'] == true;
 
@@ -438,7 +449,7 @@ class ServerService {
       // 5b. API: Configure Torbox: POST /api/torbox/config
       if (path == '/api/torbox/config' && method == 'POST') {
         final bodyStr = await utf8.decodeStream(request);
-        final bodyJson = jsonDecode(bodyStr) as Map;
+        final bodyJson = _safeParseJsonMap(bodyStr) ?? {};
         final apiKey = bodyJson['apiKey']?.toString().trim() ?? '';
         AddonConfig.instance.torboxApiKey = apiKey;
         await AddonConfig.instance.save();
@@ -470,7 +481,7 @@ class ServerService {
       // 5d. API: Upload / Cache Link to Torbox: POST /api/torbox/upload
       if (path == '/api/torbox/upload' && method == 'POST') {
         final bodyStr = await utf8.decodeStream(request);
-        final bodyJson = jsonDecode(bodyStr) as Map;
+        final bodyJson = _safeParseJsonMap(bodyStr) ?? {};
         final url = bodyJson['url']?.toString().trim() ?? '';
         final apiKey = AddonConfig.instance.torboxApiKey.trim();
         final uploadRes = await TorboxService.instance.uploadToTorbox(url, apiKey);
@@ -483,7 +494,7 @@ class ServerService {
       // 5e. API: Save Playback & Filtering Settings: POST /api/settings
       if (path == '/api/settings' && method == 'POST') {
         final bodyStr = await utf8.decodeStream(request);
-        final bodyJson = jsonDecode(bodyStr) as Map;
+        final bodyJson = _safeParseJsonMap(bodyStr) ?? {};
         if (bodyJson.containsKey('excludeCams')) {
           AddonConfig.instance.excludeCams = bodyJson['excludeCams'] == true;
         }
@@ -524,14 +535,13 @@ class ServerService {
       // 5f. API: Validate Key: POST /api/keys/validate
       if (path == '/api/keys/validate' && method == 'POST') {
         final bodyStr = await utf8.decodeStream(request);
-        final bodyJson = jsonDecode(bodyStr) as Map;
+        final bodyJson = _safeParseJsonMap(bodyStr) ?? {};
         final service = bodyJson['service']?.toString() ?? '';
         final key = bodyJson['key']?.toString() ?? '';
         final result = await KeyValidator.validate(service, key);
         request.response.headers.contentType = ContentType.json;
         request.response.write(jsonEncode(result.toJson()));
         await request.response.close();
-        return;
       }
 
       // 5g. API: Upstream update pipeline: POST /api/pipeline/update

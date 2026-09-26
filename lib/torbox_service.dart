@@ -222,7 +222,10 @@ class TorboxService {
     }
   }
 
-  /// Initiates or retrieves a debrided Torbox web download stream URL
+  /// Initiates or retrieves a debrided Torbox web download stream URL.
+  /// If file is already cached, returns instant CDN URL (<1s).
+  /// If not cached, initiates Torbox cloud caching and quickly returns null
+  /// so the player can immediately fall back to direct play without timing out.
   Future<String?> debridLink(String url, String apiKey) async {
     final cleanKey = apiKey.trim();
     if (cleanKey.isEmpty) return null;
@@ -231,11 +234,15 @@ class TorboxService {
       if (res['success'] == true) {
         final webId = res['data']?['webdownload_id'] ?? res['data']?['id'];
         if (webId != null) {
-          // Request direct streaming link
+          // Request direct streaming link with URL query encoding
+          final reqUri = Uri.parse('$_apiBase/webdl/requestdl').replace(queryParameters: {
+            'token': cleanKey,
+            'web_id': webId.toString(),
+          });
           final dlRes = await http.get(
-            Uri.parse('$_apiBase/webdl/requestdl?token=$cleanKey&web_id=$webId'),
+            reqUri,
             headers: _headers(cleanKey),
-          ).timeout(const Duration(seconds: 6));
+          ).timeout(const Duration(seconds: 4));
 
           if (dlRes.statusCode == 200) {
             final dlData = jsonDecode(dlRes.body);

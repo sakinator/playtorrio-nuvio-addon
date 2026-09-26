@@ -4,9 +4,9 @@
 class BadgeService {
   static final List<BadgeFilter> filters = [
     // Resolution (gr) - mutually exclusive
-    BadgeFilter(id: 'r-4k', groupId: 'gr', name: '4K', priority: 100, pattern: RegExp(r'(?:2160[pi]?|4k|uhd)', caseSensitive: false)),
-    BadgeFilter(id: 'r-1080', groupId: 'gr', name: 'FHD', priority: 80, pattern: RegExp(r'(?:1080[pi]?|fhd|full[\s._-]?hd)', caseSensitive: false)),
-    BadgeFilter(id: 'r-720', groupId: 'gr', name: 'HD', priority: 60, pattern: RegExp(r'720[pi]?', caseSensitive: false)),
+    BadgeFilter(id: 'r-4k', groupId: 'gr', name: '4K', priority: 100, pattern: RegExp(r'\b(?:2160[pi]?|4k|uhd)\b', caseSensitive: false)),
+    BadgeFilter(id: 'r-1080', groupId: 'gr', name: 'FHD', priority: 80, pattern: RegExp(r'\b(?:1080[pi]?|fhd|full[\s._-]?hd)\b', caseSensitive: false)),
+    BadgeFilter(id: 'r-720', groupId: 'gr', name: 'HD', priority: 60, pattern: RegExp(r'\b720[pi]?\b', caseSensitive: false)),
 
     // Quality / Release Source (grl) - mutually exclusive
     BadgeFilter(id: 'q-remux', groupId: 'grl', name: 'Remux', priority: 100, pattern: RegExp(r'\bremux\b', caseSensitive: false)),
@@ -20,7 +20,7 @@ class BadgeService {
     BadgeFilter(id: 'q-cam', groupId: 'grl', name: 'CAM', priority: 5, pattern: RegExp(r'\b(?:cam|camrip|hdcam|hd-cam)\b', caseSensitive: false)),
 
     // Visual Enhancements (gv)
-    BadgeFilter(id: 'v-atmos-dv', groupId: 'gv', name: 'Atmos+DV', priority: 100, pattern: RegExp(r'(?=.*atmos)(?=.*(?:dv|dovi|dolby[\s._-]?vision))', caseSensitive: false)),
+    BadgeFilter(id: 'v-atmos-dv', groupId: 'gv', name: 'Atmos+DV', priority: 100, pattern: RegExp(r'(?=.*\batmos\b)(?=.*\b(?:dv|dovi|dolby[\s._-]?vision)\b)', caseSensitive: false)),
     BadgeFilter(id: 'v-dv', groupId: 'gv', name: 'DV', priority: 90, pattern: RegExp(r'\b(?:dv|dovi|dolby[\s._-]?vision)\b', caseSensitive: false)),
     BadgeFilter(id: 'v-hdr10p', groupId: 'gv', name: 'HDR10+', priority: 80, pattern: RegExp(r'hdr[\s._-]?10[\s._-]?(?:\+|plus)', caseSensitive: false)),
     BadgeFilter(id: 'v-hdr10', groupId: 'gv', name: 'HDR10', priority: 70, pattern: RegExp(r'hdr[\s._-]?10', caseSensitive: false)),
