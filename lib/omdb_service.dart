@@ -132,10 +132,8 @@ class OmdbService {
       return _cache[key];
     }
 
-    final apiKey = AddonConfig.instance.omdbApiKey.trim();
-    if (apiKey.isEmpty) {
-      return null;
-    }
+    final userKey = AddonConfig.instance.omdbApiKey.trim();
+    final apiKey = userKey.isNotEmpty ? userKey : 'b9a5e69d';
 
     Uri uri;
     if (imdbId != null && imdbId.startsWith('tt')) {

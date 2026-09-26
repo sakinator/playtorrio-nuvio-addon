@@ -590,26 +590,26 @@ class WebUI {
         <button class="btn btn-primary" onclick="saveSettings()">💾 Save API Keys</button>
       </div>
       <p style="color:var(--text-muted); margin-bottom:16px; font-size:0.9rem;">
-        Elevate Nuvio and Stremio with crystal-clear transparent ClearLogos, 4K banners, live Rotten Tomatoes/IMDb ratings, and anime absolute episode mappings.
+        Elevate Nuvio and Stremio with crystal-clear transparent ClearLogos, 4K banners, live Rotten Tomatoes/IMDb ratings, and anime absolute episode mappings. <strong>All keys are 100% optional</strong> — built-in zero-key public fallbacks (Cinemeta, Metahub, TVMaze) operate out of the box!
       </p>
 
       <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:16px;">
         <div style="background:#090d13; border:1px solid var(--border); border-radius:8px; padding:14px;">
-          <label style="font-weight:600; display:block; margin-bottom:6px;">⭐ OMDb API Key (IMDb / Rotten Tomatoes):</label>
-          <input type="text" id="omdbApiKey" value="$omdbApiKey" placeholder="e.g. b9a5e69d" style="width:100%; padding:8px; background:#161b22; border:1px solid var(--border); border-radius:6px; color:var(--text); font-size:0.88rem;">
-          <div style="color:var(--text-muted); font-size:0.78rem; margin-top:6px;">Supplies live IMDb ratings, RT tomatometer, and Metacritic scores. Pre-filled with active key.</div>
+          <label style="font-weight:600; display:block; margin-bottom:6px;">⭐ OMDb API Key <span style="font-weight:normal; font-size:0.8rem; color:#3fb950;">(Optional)</span>:</label>
+          <input type="text" id="omdbApiKey" value="$omdbApiKey" placeholder="Pre-configured fallback key active" style="width:100%; padding:8px; background:#161b22; border:1px solid var(--border); border-radius:6px; color:var(--text); font-size:0.88rem;">
+          <div style="color:var(--text-muted); font-size:0.78rem; margin-top:6px;">Supplies live IMDb ratings, RT tomatometer, and Metacritic scores. Falls back to Cinemeta ratings if empty.</div>
         </div>
 
         <div style="background:#090d13; border:1px solid var(--border); border-radius:8px; padding:14px;">
-          <label style="font-weight:600; display:block; margin-bottom:6px;">✨ Fanart.tv API Key (ClearLogos & 4K Art):</label>
-          <input type="text" id="fanartApiKey" value="$fanartApiKey" placeholder="Enter Fanart.tv Project / Client Key" style="width:100%; padding:8px; background:#161b22; border:1px solid var(--border); border-radius:6px; color:var(--text); font-size:0.88rem;">
-          <div style="color:var(--text-muted); font-size:0.78rem; margin-top:6px;">Renders transparent PNG ClearLogos and 4K backdrops in Nuvio hero view. Auto-falls back to Metahub.</div>
+          <label style="font-weight:600; display:block; margin-bottom:6px;">✨ Fanart.tv API Key <span style="font-weight:normal; font-size:0.8rem; color:#3fb950;">(Optional)</span>:</label>
+          <input type="text" id="fanartApiKey" value="$fanartApiKey" placeholder="Leave empty for Metahub ClearLogos" style="width:100%; padding:8px; background:#161b22; border:1px solid var(--border); border-radius:6px; color:var(--text); font-size:0.88rem;">
+          <div style="color:var(--text-muted); font-size:0.78rem; margin-top:6px;">Renders transparent PNG ClearLogos and 4K backdrops. Automatically falls back to Metahub CDN with zero keys.</div>
         </div>
 
         <div style="background:#090d13; border:1px solid var(--border); border-radius:8px; padding:14px;">
-          <label style="font-weight:600; display:block; margin-bottom:6px;">📺 TheTVDB API Key (Episode Mappings):</label>
-          <input type="text" id="tvdbApiKey" value="$tvdbApiKey" placeholder="Enter TheTVDB v4 API Key" style="width:100%; padding:8px; background:#161b22; border:1px solid var(--border); border-radius:6px; color:var(--text); font-size:0.88rem;">
-          <div style="color:var(--text-muted); font-size:0.78rem; margin-top:6px;">Maps absolute episode numbers (e.g. EP 1089) and alternate episode ordering for anime and serials.</div>
+          <label style="font-weight:600; display:block; margin-bottom:6px;">📺 TheTVDB API Key <span style="font-weight:normal; font-size:0.8rem; color:#3fb950;">(Optional)</span>:</label>
+          <input type="text" id="tvdbApiKey" value="$tvdbApiKey" placeholder="Leave empty for Cinemeta & TVMaze" style="width:100%; padding:8px; background:#161b22; border:1px solid var(--border); border-radius:6px; color:var(--text); font-size:0.88rem;">
+          <div style="color:var(--text-muted); font-size:0.78rem; margin-top:6px;">Maps absolute episode numbers and titles. Automatically falls back to Cinemeta & TVMaze with zero keys.</div>
         </div>
       </div>
     </div>

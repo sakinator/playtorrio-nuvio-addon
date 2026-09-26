@@ -115,6 +115,7 @@ class MetadataService {
     String? background;
     String? logo;
 
+    String? cinemetaRating;
     final isTv = (type == 'series' || type == 'tv');
     final cinemetaType = isTv ? 'series' : 'movie';
     final tmdbType = isTv ? 'tv' : 'movie';
@@ -122,7 +123,7 @@ class MetadataService {
     if (baseId.startsWith('tt')) {
       imdbId = baseId;
 
-      // 1. Try Cinemeta (Fast, reliable for Stremio/Nuvio ecosystem)
+      // 1. Try Cinemeta (Fast, reliable, zero-key fallback for Stremio/Nuvio)
       try {
         final uri = Uri.parse('$_cinemeta/$cinemetaType/$imdbId.json');
         final res = await http.get(uri, headers: _headers).timeout(const Duration(seconds: 4));
@@ -135,6 +136,7 @@ class MetadataService {
             poster = meta['poster']?.toString();
             background = meta['background']?.toString();
             logo = meta['logo']?.toString();
+            cinemetaRating = meta['imdbRating']?.toString();
             if (meta['genres'] is List) {
               genres = (meta['genres'] as List).map((e) => e.toString()).toList();
             }
@@ -244,7 +246,17 @@ class MetadataService {
       await Future.wait(futures).timeout(const Duration(milliseconds: 3500));
     } catch (_) {}
 
-    // Prefer Fanart ClearLogo and background if available; fallback to Cinemeta/Metahub
+    // Fallback: If OMDb was disabled, unreachable, or has no key, use zero-key Cinemeta IMDb rating
+    if (omdbData == null && cinemetaRating != null && cinemetaRating.isNotEmpty) {
+      omdbData = OmdbMetadata(
+        imdbId: imdbId,
+        title: title,
+        year: year?.toString(),
+        imdbRating: cinemetaRating,
+      );
+    }
+
+    // Prefer Fanart ClearLogo and background if available; fallback to Cinemeta/Metahub (100% zero-key)
     final finalLogo = artworkData?.logo ?? logo ?? (imdbId != null ? 'https://images.metahub.space/logo/medium/$imdbId/img' : null);
     final finalBackground = artworkData?.background ?? background ?? (imdbId != null ? 'https://images.metahub.space/background/medium/$imdbId/img' : null);
     final finalPoster = artworkData?.poster ?? poster ?? (imdbId != null ? 'https://images.metahub.space/poster/medium/$imdbId/img' : null);
