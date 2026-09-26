@@ -946,9 +946,12 @@ class WebUI {
       </div>
     </div>
 
-    <!-- Legal Disclaimer Footer -->
-    <div style="text-align:center; padding:24px 14px 10px; color:var(--text-muted); font-size:0.8rem; border-top:1px solid var(--border); margin-top:24px; line-height:1.6;">
-      <strong>⚖️ Legal Disclaimer:</strong> The author does not own, host, upload, or broadcast any of the media, videos, or streams displayed. sakinator-MegaScraper acts solely as a search indexer aggregating publicly available hyperlinks from third-party websites on the internet. All media is hosted by independent third-party services.
+    <!-- Legal & Vibe Coded Disclaimer Footer -->
+    <div style="text-align:center; padding:24px 14px 14px; color:var(--text-muted); font-size:0.8rem; border-top:1px solid var(--border); margin-top:24px; line-height:1.6;">
+      <div style="margin-bottom:8px;">
+        <span style="display:inline-block; background:rgba(255,105,180,0.15); color:#ff69b4; border:1px solid rgba(255,105,180,0.3); border-radius:12px; padding:2px 10px; font-weight:600; font-size:0.75rem; letter-spacing:0.5px;">✨ 100% VIBE CODED WITH AI</span>
+      </div>
+      <strong>⚖️ GitHub & Legal Disclaimer:</strong> The author does not own, host, upload, or broadcast any media or streams. sakinator-MegaScraper acts solely as a local search indexer aggregating publicly available hyperlinks from third-party websites on the internet. All media is hosted by independent third-party services. Not affiliated with Stremio, Nuvio, TorBox, or any scraped source.
     </div>
   </div>
 

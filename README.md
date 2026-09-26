@@ -1,5 +1,14 @@
 # ⚡ sakinator-MegaScraper Addon for Nuvio & Stremio
 
+[![Vibe Coded](https://img.shields.io/badge/Vibe%20Coded-100%25%20with%20AI-ff69b4?style=for-the-badge&logo=visualstudiocode&logoColor=white)](https://github.com/sakinator/playtorrio-nuvio-addon)
+[![Scrapers](https://img.shields.io/badge/Scrapers-56%20Cloud%20Extractors-blueviolet?style=for-the-badge)](https://github.com/sakinator/playtorrio-nuvio-addon)
+[![Platforms](https://img.shields.io/badge/Platforms-Windows%20%7C%20Android%20TV%20%7C%20Linux%20%7C%20macOS-2ea44f?style=for-the-badge)](https://github.com/sakinator/playtorrio-nuvio-addon)
+[![Debrid](https://img.shields.io/badge/TorBox-Cloud%20WebDL%20Caching-0070f3?style=for-the-badge)](https://torbox.app)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
+
+> [!NOTE]
+> **✨ 100% Vibe Coded with AI:** This entire project is vibe-coded through continuous human-AI agentic collaboration, real-time feedback loops, automated regression test suites, and live self-healing pipelines. High velocity, zero bloat, pure vibes.
+
 A high-performance local Stremio & Nuvio-compatible addon server featuring **56 Direct HTTP/HLS Cloud Scrapers**, **TorBox Debrid Integration**, **Live Hoster Cloud Caching**, and rich public catalogs (**YouTube, Internet Archive & Dailymotion**) with automatic badge tagging and streaming proxy.
 
 ---
@@ -259,14 +268,29 @@ The unified scraper engine integrates 56 non-torrent cloud providers across Indi
 
 ---
 
-## ⚖️ Legal Disclaimer & DMCA Policy
+## ✨ Vibe Coded Philosophy & Manifesto
+
+> *"Code at the speed of thought. Guided by vibes, verified by automated test suites."*
+
+This entire codebase — spanning 56 stream scrapers, dynamic HLS proxying, TorBox cloud debrid caching, cross-platform Android TV / mobile interfaces, and live update pipelines — is **100% Vibe Coded**.
+
+### What does "Vibe Coded" mean here?
+- **AI-Native Architecture**: Conceived, architected, debugged, and refined through symbiotic interaction between human vision and autonomous AI coding agents (DeepMind Antigravity / Gemini / Claude).
+- **Rapid Self-Healing**: Automated QA loops, subagent audits, real-time JavaScript validation (`node -c`), and endpoint stress-testing catch edge cases before they ship.
+- **Vibe Velocity**: Shipped iteratively at extreme velocity without bureaucratic technical debt — continuously evolving as streaming protocols, hosters, and community conventions update.
+- **As-Is Provision**: As with all vibe-coded software, it is offered purely as open-source research and experimental tooling. Enjoy the vibes responsibly!
+
+---
+
+## ⚖️ GitHub Disclaimer & Legal DMCA Policy
 
 > [!IMPORTANT]
-> **sakinator-MegaScraper does not host, upload, archive, broadcast, or own any media, video files, audio streams, or torrent data on any servers or infrastructure.**
-
-1. **Pure Indexer & Search Tool**: This software functions strictly as an automated web-scraping and indexing utility. It searches for and aggregates hyperlinks that are already publicly available, crawled, or indexed on public third-party websites across the internet.
-2. **Zero Media Ownership**: The authors, developers, and maintainers of this project do not own, control, maintain, or manage any of the scraped websites, hosters, content delivery networks (CDNs), or debrid providers indexed by this tool.
-3. **No File Hosting**: No copyrighted or proprietary media files are stored on, transmitted through, or distributed from this repository or any servers operated by the project.
-4. **Educational & Personal Research**: This software is provided exclusively for personal research and educational purposes to demonstrate web-scraping techniques, HLS proxy architecture, and local media cataloging.
-5. **DMCA & Copyright Takedowns**: Because this application does not host or store any content, takedown notices and copyright removal requests should be directed to the third-party web host or file-sharing service actually hosting the media files. Once a file is removed from the host source, it will automatically no longer appear in search results.
+> **GitHub Repository Disclaimer:**
+> 1. **No Content Hosted:** This GitHub repository contains **only open-source Dart and Flutter application code**. It does NOT contain, host, store, mirror, link to, or distribute any media files, copyrighted videos, torrents, or pirated content of any kind.
+> 2. **Independent Open-Source Utility:** This project is an independent, non-commercial open-source utility developed for educational, interoperability, and personal research purposes.
+> 3. **No Affiliation:** This project is NOT affiliated with, sponsored by, endorsed by, or in any way officially connected with GitHub, Stremio, Nuvio, TorBox, Google, YouTube, Internet Archive, Dailymotion, or any of the third-party websites or services indexed by the scraping engines. All product names, trademarks, and registered trademarks belong to their respective owners.
+> 4. **Pure Web Indexer:** The software acts solely as an automated search indexer querying publicly accessible search endpoints on the open internet, identical to a standard web browser or search engine query.
+> 5. **Zero Media Ownership**: The authors, developers, and maintainers of this project do not own, control, maintain, or manage any of the scraped websites, hosters, content delivery networks (CDNs), or debrid providers indexed by this tool.
+> 6. **User Responsibility:** Users are solely responsible for ensuring that their use of this software complies with all applicable local, national, and international laws, regulations, and third-party terms of service.
+> 7. **DMCA Takedown Compliance:** Because no media or infringing content is stored in this repository or on any servers operated by the authors, DMCA notices regarding scraped content should be directed to the third-party web host or file storage provider actually hosting the files. For concerns regarding repository source code, please open an Issue or contact the repository owner.
 
