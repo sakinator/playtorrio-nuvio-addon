@@ -38,6 +38,7 @@ class ScrapedStream {
   Map<String, dynamic> toJson() => {
         'name': name,
         'title': title,
+        'description': title,
         'url': url,
         if (behaviorHints != null) 'behaviorHints': behaviorHints,
         if (subtitles != null && subtitles!.isNotEmpty) 'subtitles': subtitles,

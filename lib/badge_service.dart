@@ -161,6 +161,152 @@ class BadgeService {
     return null;
   }
 
+  /// Formats OTT platforms for maximum compatibility with Kingsize V2 and custom badge packs
+  static String formatOttBadge(String ott) {
+    switch (ott.toUpperCase()) {
+      case 'HOTSTAR':
+        return 'HOTSTAR DSNP';
+      case 'PRIME':
+        return 'PRIME VIDEO AMZN';
+      case 'APPLE TV+':
+        return 'APPLE TV+ ATVP';
+      case 'MAX':
+        return 'HBO MAX HMAX';
+      case 'PARAMOUNT+':
+        return 'PARAMOUNT+ PMTP';
+      default:
+        return ott;
+    }
+  }
+
+  /// Generates zero-width Unicode marker sequences for instant matching by Nuvio Kingsize V2 badge packs
+  static String generateNuvioMarkers({
+    required List<String> detectedBadges,
+    String? resolvedRes,
+    String? codec,
+    String? audioBadge,
+  }) {
+    final sb = StringBuffer();
+
+    // 1. Audio Tags
+    if (detectedBadges.contains('TrueHD')) {
+      sb.write(NuvioMarkers.truehd);
+    } else if (detectedBadges.contains('DTS:X')) {
+      sb.write(NuvioMarkers.dtsx);
+    } else if (detectedBadges.contains('DTS-HD')) {
+      sb.write(NuvioMarkers.dtshdma);
+    } else if (detectedBadges.contains('DTS')) {
+      sb.write(NuvioMarkers.dts);
+    } else if (detectedBadges.contains('Atmos') || detectedBadges.contains('Atmos+DV')) {
+      sb.write(NuvioMarkers.atmos);
+      sb.write(NuvioMarkers.ddp);
+    } else if (detectedBadges.contains('DD+')) {
+      sb.write(NuvioMarkers.ddp);
+    } else if (detectedBadges.contains('DD')) {
+      sb.write(NuvioMarkers.dd);
+    } else if (detectedBadges.contains('FLAC')) {
+      sb.write(NuvioMarkers.flac);
+    } else if (detectedBadges.contains('AAC')) {
+      sb.write(NuvioMarkers.aac);
+    } else {
+      sb.write(NuvioMarkers.ddp);
+    }
+
+    // 2. Quality / Release Source
+    if (detectedBadges.contains('Remux')) {
+      sb.write(NuvioMarkers.remux);
+    } else if (detectedBadges.contains('BluRay')) {
+      sb.write(NuvioMarkers.bluray);
+    } else if (detectedBadges.contains('WEB-DL')) {
+      sb.write(NuvioMarkers.webdl);
+    } else if (detectedBadges.contains('WEBRip')) {
+      sb.write(NuvioMarkers.webrip);
+    } else if (detectedBadges.contains('HDRip')) {
+      sb.write(NuvioMarkers.hdrip);
+    } else if (detectedBadges.contains('HDTV')) {
+      sb.write(NuvioMarkers.hdtv);
+    } else if (detectedBadges.contains('CAM')) {
+      sb.write(NuvioMarkers.cam);
+    } else if (detectedBadges.contains('TeleSync')) {
+      sb.write(NuvioMarkers.ts);
+    } else if (detectedBadges.contains('TeleCine')) {
+      sb.write(NuvioMarkers.tc);
+    } else {
+      sb.write(NuvioMarkers.webdl);
+    }
+
+    // 3. Visual Tags
+    if (detectedBadges.contains('Atmos+DV') || detectedBadges.contains('DV')) {
+      sb.write(NuvioMarkers.dv);
+    } else if (detectedBadges.contains('HDR10+')) {
+      sb.write(NuvioMarkers.hdr10plus);
+    } else if (detectedBadges.contains('HDR10')) {
+      sb.write(NuvioMarkers.hdr10);
+    } else if (detectedBadges.contains('HDR')) {
+      sb.write(NuvioMarkers.hdr);
+    } else if (detectedBadges.contains('10-Bit')) {
+      sb.write(NuvioMarkers.bit10);
+    }
+
+    // 4. Resolution
+    final res = resolvedRes?.toUpperCase() ?? '';
+    if (detectedBadges.contains('4K') || res.contains('4K') || res.contains('2160')) {
+      sb.write(NuvioMarkers.r4k);
+    } else if (detectedBadges.contains('FHD') || res.contains('1080')) {
+      sb.write(NuvioMarkers.r1080p);
+    } else if (detectedBadges.contains('HD') || res.contains('720')) {
+      sb.write(NuvioMarkers.r720p);
+    } else {
+      sb.write(NuvioMarkers.r1080p);
+    }
+
+    // 5. Video Codec / Encoder
+    if (detectedBadges.contains('AV1')) {
+      sb.write(NuvioMarkers.av1);
+    } else if (detectedBadges.contains('HEVC') || res.contains('4K') || res.contains('2160')) {
+      sb.write(NuvioMarkers.hevc);
+    } else if (detectedBadges.contains('AVC')) {
+      sb.write(NuvioMarkers.avc);
+    } else {
+      sb.write(NuvioMarkers.hevc);
+    }
+
+    // 6. Audio Channels
+    if (detectedBadges.contains('7.1')) {
+      sb.write(NuvioMarkers.ch71);
+    } else if (detectedBadges.contains('5.1')) {
+      sb.write(NuvioMarkers.ch51);
+    } else if (detectedBadges.contains('2.0')) {
+      sb.write(NuvioMarkers.ch20);
+    } else {
+      sb.write(NuvioMarkers.ch51);
+    }
+
+    return sb.toString();
+  }
+
+  /// Generates language Unicode markers for Nuvio V2 badge packs
+  static String generateLanguageMarkers(List<String> detectedBadges) {
+    final sb = StringBuffer();
+    if (detectedBadges.contains('Hindi') || detectedBadges.contains('Dual Audio') || detectedBadges.contains('Multi Audio')) {
+      sb.write(NuvioMarkers.hindi);
+    }
+    if (detectedBadges.contains('English') || !detectedBadges.contains('Hindi')) {
+      sb.write(NuvioMarkers.english);
+    }
+    if (detectedBadges.contains('Tamil')) sb.write(NuvioMarkers.tamil);
+    if (detectedBadges.contains('Telugu')) sb.write(NuvioMarkers.telugu);
+    if (detectedBadges.contains('Malayalam')) sb.write(NuvioMarkers.malayalam);
+    if (detectedBadges.contains('Kannada')) sb.write(NuvioMarkers.kannada);
+    if (detectedBadges.contains('Bengali')) sb.write(NuvioMarkers.bengali);
+    if (detectedBadges.contains('Punjabi')) sb.write(NuvioMarkers.punjabi);
+    if (detectedBadges.contains('Marathi')) sb.write(NuvioMarkers.marathi);
+    if (detectedBadges.contains('Gujarati')) sb.write(NuvioMarkers.gujarati);
+    if (detectedBadges.contains('Japanese')) sb.write(NuvioMarkers.japanese);
+    if (detectedBadges.contains('Korean')) sb.write(NuvioMarkers.korean);
+    return sb.toString();
+  }
+
   /// Enriches scraped stream metadata with badges and clean formatting
   static Map<String, String> enrichStream({
     required String rawTitle,
@@ -258,6 +404,15 @@ class BadgeService {
     if (cleanProvider.isEmpty) cleanProvider = providerName;
 
     // 5. Build multi-line title for Nuvio stream card
+    final technicalMarkers = generateNuvioMarkers(
+      detectedBadges: detectedBadges,
+      resolvedRes: resolvedRes,
+      codec: codec,
+      audioBadge: audioBadge,
+    );
+    final languageMarkers = generateLanguageMarkers(detectedBadges);
+    final allMarkers = '$technicalMarkers$languageMarkers';
+
     final titleLines = [
       sceneFilename,
       if (details.isNotEmpty) details.join(' • '),
@@ -267,7 +422,7 @@ class BadgeService {
     // 6. Built-in Header Badges: [OTT] [Resolution] [Release] [Visual] [Audio] [Language]
     final headerBadges = <String>[];
     if (effectiveOtt != null && effectiveOtt.isNotEmpty) {
-      headerBadges.add(effectiveOtt);
+      headerBadges.add(formatOttBadge(effectiveOtt));
     }
     if (resolvedRes.isNotEmpty) {
       headerBadges.add(resolvedRes);
@@ -284,12 +439,19 @@ class BadgeService {
       }
     }
     final badgeHeader = headerBadges.take(5).map((b) => '[$b]').join(' ');
-    final displayName = badgeHeader.isNotEmpty ? '$cleanProvider\n$badgeHeader' : cleanProvider;
+    final enrichedBadgeHeader = badgeHeader.isNotEmpty
+        ? '$badgeHeader$allMarkers'
+        : (resolvedRes.isNotEmpty ? '[$resolvedRes]$allMarkers' : allMarkers);
+    final displayName = badgeHeader.isNotEmpty
+        ? '$cleanProvider\n$badgeHeader$allMarkers'
+        : '$cleanProvider$allMarkers';
+
+    final titleWithMarkers = '${titleLines.join('\n')}\n$allMarkers';
 
     return {
       'name': displayName,
-      'title': titleLines.join('\n'),
-      'badgeHeader': badgeHeader.isNotEmpty ? badgeHeader : (resolvedRes.isNotEmpty ? '[$resolvedRes]' : ''),
+      'title': titleWithMarkers,
+      'badgeHeader': enrichedBadgeHeader,
     };
   }
 
@@ -368,3 +530,73 @@ class BadgeFilter {
     required this.pattern,
   });
 }
+
+/// Zero-width Unicode markers corresponding to Kingsize V2 / Nuvio Instant Badges
+class NuvioMarkers {
+  // Resolution (gr)
+  static const r4k = '\u2063\u200C\u200C\u200C\u200D\u200D\u200C\u200C\u200D\u2064';
+  static const r1440p = '\u2063\u200C\u200C\u200C\u200D\u200D\u200C\u200D\u200C\u2064';
+  static const r1080p = '\u2063\u200C\u200C\u200C\u200D\u200D\u200C\u200D\u200D\u2064';
+  static const r720p = '\u2063\u200C\u200C\u200C\u200D\u200D\u200D\u200C\u200C\u2064';
+  static const r576p = '\u2063\u200C\u200C\u200C\u200D\u200D\u200D\u200C\u200D\u2064';
+  static const r480p = '\u2063\u200C\u200C\u200C\u200D\u200D\u200D\u200D\u200C\u2064';
+
+  // Quality / Release Source (gq)
+  static const remux = '\u2063\u200C\u200C\u200D\u200C\u200C\u200C\u200D\u200C\u2064';
+  static const bluray = '\u2063\u200C\u200C\u200D\u200C\u200C\u200C\u200D\u200D\u2064';
+  static const webdl = '\u2063\u200C\u200C\u200D\u200C\u200C\u200D\u200C\u200C\u2064';
+  static const webrip = '\u2063\u200C\u200C\u200D\u200C\u200C\u200D\u200C\u200D\u2064';
+  static const hdrip = '\u2063\u200C\u200C\u200D\u200C\u200C\u200D\u200D\u200C\u2064';
+  static const hdtv = '\u2063\u200C\u200C\u200D\u200C\u200D\u200C\u200C\u200D\u2064';
+  static const dvdrip = '\u2063\u200C\u200C\u200D\u200C\u200D\u200C\u200C\u200C\u2064';
+  static const cam = '\u2063\u200C\u200C\u200D\u200C\u200D\u200D\u200C\u200D\u2064';
+  static const ts = '\u2063\u200C\u200C\u200D\u200C\u200D\u200D\u200C\u200C\u2064';
+  static const tc = '\u2063\u200C\u200C\u200D\u200C\u200D\u200C\u200D\u200D\u2064';
+
+  // Visual Tags (gv)
+  static const dv = '\u2063\u200C\u200C\u200C\u200C\u200C\u200C\u200C\u200D\u2064';
+  static const hdr10plus = '\u2063\u200C\u200C\u200C\u200C\u200C\u200C\u200D\u200C\u2064';
+  static const hdr10 = '\u2063\u200C\u200C\u200C\u200C\u200C\u200C\u200D\u200D\u2064';
+  static const hdr = '\u2063\u200C\u200C\u200C\u200C\u200C\u200D\u200C\u200C\u2064';
+  static const hlg = '\u2063\u200C\u200C\u200C\u200C\u200C\u200D\u200C\u200D\u2064';
+  static const bit10 = '\u2063\u200C\u200C\u200C\u200C\u200C\u200D\u200D\u200C\u2064';
+  static const sdr = '\u2063\u200C\u200C\u200C\u200C\u200C\u200D\u200D\u200D\u2064';
+
+  // Audio Tags (ga)
+  static const atmos = '\u2063\u200C\u200C\u200C\u200C\u200D\u200C\u200C\u200D\u2064';
+  static const truehd = '\u2063\u200C\u200C\u200C\u200D\u200C\u200C\u200C\u200D\u2064';
+  static const dtsx = '\u2063\u200C\u200C\u200C\u200C\u200D\u200D\u200C\u200C\u2064';
+  static const dtshdma = '\u2063\u200C\u200C\u200C\u200C\u200D\u200D\u200C\u200D\u2064';
+  static const dtshd = '\u2063\u200C\u200C\u200C\u200C\u200D\u200D\u200D\u200C\u2064';
+  static const dts = '\u2063\u200C\u200C\u200C\u200D\u200C\u200C\u200C\u200C\u2064';
+  static const ddp = '\u2063\u200C\u200C\u200C\u200C\u200D\u200C\u200D\u200C\u2064';
+  static const dd = '\u2063\u200C\u200C\u200C\u200C\u200D\u200C\u200D\u200D\u2064';
+  static const aac = '\u2063\u200C\u200C\u200C\u200D\u200C\u200C\u200D\u200D\u2064';
+  static const flac = '\u2063\u200C\u200C\u200C\u200D\u200C\u200D\u200C\u200C\u2064';
+  static const opus = '\u2063\u200C\u200C\u200C\u200D\u200C\u200C\u200D\u200C\u2064';
+
+  // Audio Channels (gc)
+  static const ch71 = '\u2063\u200C\u200C\u200C\u200D\u200C\u200D\u200C\u200D\u2064';
+  static const ch51 = '\u2063\u200C\u200C\u200C\u200D\u200C\u200D\u200D\u200D\u2064';
+  static const ch20 = '\u2063\u200C\u200C\u200C\u200D\u200D\u200C\u200C\u200C\u2064';
+
+  // Video Codec / Encoder (ge)
+  static const hevc = '\u2063\u200C\u200C\u200D\u200C\u200D\u200D\u200D\u200D\u2064';
+  static const avc = '\u2063\u200C\u200C\u200D\u200D\u200C\u200C\u200C\u200C\u2064';
+  static const av1 = '\u2063\u200C\u200C\u200D\u200C\u200D\u200D\u200D\u200C\u2064';
+
+  // Languages (glang)
+  static const hindi = '\u2063\u2062\u200D\u200D\u200D\u200C\u2064';
+  static const english = '\u2063\u2062\u2060\u200C\u200C\u200C\u2064';
+  static const tamil = '\u2063\u2062\u200C\u200C\u2060\u200C\u2064';
+  static const telugu = '\u2063\u2062\u200D\u200C\u2060\u200C\u2064';
+  static const malayalam = '\u2063\u2062\u200C\u200D\u2060\u200C\u2064';
+  static const kannada = '\u2063\u2062\u2060\u200C\u2060\u200C\u2064';
+  static const bengali = '\u2063\u2062\u2060\u200D\u200D\u200C\u2064';
+  static const punjabi = '\u2063\u2062\u200C\u2060\u200D\u200C\u2064';
+  static const marathi = '\u2063\u2062\u200D\u2060\u200D\u200C\u2064';
+  static const gujarati = '\u2063\u2062\u2060\u2060\u200D\u200C\u2064';
+  static const japanese = '\u2063\u2062\u200C\u200D\u200C\u200C\u2064';
+  static const korean = '\u2063\u2062\u200C\u200D\u200D\u200C\u2064';
+}
+
