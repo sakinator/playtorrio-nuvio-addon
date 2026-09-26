@@ -627,7 +627,23 @@ class ServerService {
       // 7. Badges JSON
       if (path == '/badges.json') {
         request.response.headers.contentType = ContentType.json;
-        request.response.write(jsonEncode({'status': 'ok', 'badges': 'configured'}));
+        final candidates = [
+          File('data/badges.json'),
+          File('${Directory.current.path}/data/badges.json'),
+          File('assets/badges.json'),
+        ];
+        File? found;
+        for (final f in candidates) {
+          if (f.existsSync()) {
+            found = f;
+            break;
+          }
+        }
+        if (found != null) {
+          request.response.write(await found.readAsString());
+        } else {
+          request.response.write(jsonEncode({'status': 'ok', 'badges': 'configured'}));
+        }
         await request.response.close();
         return;
       }

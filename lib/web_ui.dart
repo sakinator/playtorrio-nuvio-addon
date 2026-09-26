@@ -592,6 +592,28 @@ class WebUI {
             </div>
           </div>
         </div>
+
+        <!-- Option 3: Nuvio Fusion Badges (Quality & OTT Logos) -->
+        <div style="background:#090d13; border:1px solid #ff69b4; border-radius:10px; padding:16px; display:flex; flex-direction:column; justify-content:space-between; gap:12px; grid-column: 1 / -1;">
+          <div>
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; flex-wrap:wrap; gap:8px;">
+              <span style="font-weight:700; font-size:0.95rem; color:#ff69b4;">🎨 Nuvio Logo Badges (Quality & OTT Logos)</span>
+              <span style="font-size:0.75rem; color:#ff69b4; background:rgba(255, 105, 180, 0.15); border:1px solid rgba(255,105,180,0.4); padding:2px 8px; border-radius:12px; font-weight:600;">Required for Logo Badges</span>
+            </div>
+            <p style="font-size:0.84rem; color:var(--text); line-height:1.5; margin:0;">
+              Nuvio renders visual logos & badges (4K, WEB-DL, Hotstar, Netflix, Prime, JioCinema, SonyLIV, Zee5) through <strong>Fusion Badge URLs</strong>. To enable badges in Nuvio, copy this URL:
+            </p>
+          </div>
+          <div>
+            <div style="display:flex; gap:8px; margin-bottom:8px;">
+              <input class="url-input" id="badgesUrl" value="http://$localIp:$port/badges.json" readonly style="font-size:0.84rem; padding:8px 10px; color:#ff69b4; font-weight:600;">
+              <button type="button" class="btn btn-primary" onclick="copyText('badgesUrl')" style="padding:8px 16px; font-size:0.85rem; white-space:nowrap; font-weight:700; background:#ff69b4; border-color:#ff69b4; color:#fff;">📋 Copy Badge URL</button>
+            </div>
+            <div style="font-size:0.8rem; color:var(--text-muted); display:flex; align-items:center; gap:6px;">
+              <span>👉</span> In Nuvio app: <strong>Settings (⚙️)</strong> ➔ <strong>Layout</strong> ➔ <strong>Streams</strong> ➔ <strong>Fusion Badge URLs</strong> ➔ Paste & Add!
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
