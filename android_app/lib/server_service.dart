@@ -10,6 +10,7 @@ import 'scraper_engine.dart';
 import 'web_ui.dart';
 import 'catalog_service.dart';
 import 'torbox_service.dart';
+import 'doh_resolver.dart';
 
 class ServerService {
   static final ServerService instance = ServerService._();
@@ -110,6 +111,22 @@ class ServerService {
     if (isRunning.value) return true;
 
     try {
+      HttpOverrides.global = MegascraperHttpOverrides();
+      DohResolver.instance.prewarm([
+        'api.torbox.app',
+        'cinematv.click',
+        'vidsrc.to',
+        'vidlink.pro',
+        'autoembed.cc',
+        'embed.su',
+        'rabbitstream.net',
+        'megacloud.tv',
+        '1337x.to',
+        'torrentgalaxy.to',
+        'vegamovies.im',
+        'hdhub4u.tv',
+      ]);
+
       final cfg = AddonConfig.instance;
       await updateLanIp();
 

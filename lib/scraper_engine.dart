@@ -15,6 +15,7 @@ class ScrapedStream {
   final Map<String, dynamic>? behaviorHints;
   final String provider;
   final String? quality;
+  final List<Map<String, dynamic>>? subtitles;
 
   ScrapedStream({
     required this.name,
@@ -23,6 +24,7 @@ class ScrapedStream {
     this.behaviorHints,
     required this.provider,
     this.quality,
+    this.subtitles,
   });
 
   Map<String, dynamic> toJson() => {
@@ -30,6 +32,7 @@ class ScrapedStream {
         'title': title,
         'url': url,
         if (behaviorHints != null) 'behaviorHints': behaviorHints,
+        if (subtitles != null && subtitles!.isNotEmpty) 'subtitles': subtitles,
       };
 }
 
@@ -42,6 +45,11 @@ class ScraperEngine {
   /// launching 46×2 parallel requests.
   final Map<String, Future<List<ScrapedStream>>> _inFlight = {};
 
+  /// Circuit Breaker: maps providerId to consecutive failure count
+  final Map<String, int> _consecutiveFailures = {};
+  /// Circuit Breaker: maps providerId to expiration of tripped state
+  final Map<String, DateTime> _trippedUntil = {};
+
   ScraperEngine._() {
     _initScrapers();
   }
@@ -53,6 +61,8 @@ class ScraperEngine {
 
   void reloadScrapers() {
     _inFlight.clear(); // Invalidate any in-flight results after a reload
+    _consecutiveFailures.clear();
+    _trippedUntil.clear();
     _initScrapers();
   }
 
@@ -93,12 +103,21 @@ class ScraperEngine {
     required MediaMetadata meta,
     required String localBaseUrl,
   }) async {
-    final scrapers = activeScrapers;
+    final allActive = activeScrapers;
+    final now = DateTime.now();
+    final scrapers = allActive.where((s) {
+      final tripExp = _trippedUntil[s.providerId];
+      if (tripExp != null && tripExp.isAfter(now)) {
+        return false;
+      }
+      return true;
+    }).toList();
+
     final cfg = AddonConfig.instance;
     final timeout = Duration(seconds: cfg.timeoutSeconds);
 
     print('[ScraperEngine] Scraping "${meta.title}" (${meta.year ?? 'N/A'}, ${meta.type}) '
-        'across ${scrapers.length} active scrapers (timeout: ${cfg.timeoutSeconds}s)...');
+        'across ${scrapers.length} active scrapers (${allActive.length - scrapers.length} tripped, timeout: ${cfg.timeoutSeconds}s)...');
 
     // Each scraper collects into its own list to avoid concurrent-write races.
     final futures = scrapers.map((scraper) async {
@@ -115,8 +134,15 @@ class ScraperEngine {
         await for (final item in stream.timeout(timeout)) {
           localResults.add(item);
         }
+        _consecutiveFailures[scraper.providerId] = 0;
+        _trippedUntil.remove(scraper.providerId);
       } catch (_) {
-        // Individual scraper error / timeout – silently swallowed.
+        final fails = (_consecutiveFailures[scraper.providerId] ?? 0) + 1;
+        _consecutiveFailures[scraper.providerId] = fails;
+        if (fails >= 3) {
+          _trippedUntil[scraper.providerId] = DateTime.now().add(const Duration(minutes: 10));
+          print('[CircuitBreaker] Scraper ${scraper.providerId} tripped for 10m (3 consecutive failures).');
+        }
       }
       return localResults;
     });
@@ -148,43 +174,38 @@ class ScraperEngine {
       // ── URL & proxy decision ───────────────────────────────────────────
       // ── Torbox Caching & Debrid Integration ───────────────────────────
       final torboxKey = cfg.torboxApiKey.trim();
+      final isSupportedHoster = torboxKey.isNotEmpty && TorboxService.instance.isSupportedHoster(rawUrl);
       bool isTorboxCached = false;
-      if (torboxKey.isNotEmpty && TorboxService.instance.isSupportedHoster(rawUrl)) {
+      if (isSupportedHoster) {
         try {
           isTorboxCached = await TorboxService.instance.checkCached(rawUrl, torboxKey);
         } catch (_) {}
       }
 
-      // ── URL & proxy / Torbox decision ───────────────────────────────────
-      String streamUrl = rawUrl;
-      bool isProxied = false;
-
-      if (isTorboxCached && torboxKey.isNotEmpty) {
-        // Route through local Torbox streaming resolver
-        streamUrl = '$localBaseUrl/torbox/play?url=${Uri.encodeComponent(rawUrl)}';
-      } else if (cfg.enableProxyForHeaders && headers.isNotEmpty) {
+      // ── Direct (Uncached) Stream Configuration ────────────────────────
+      String directStreamUrl = rawUrl;
+      bool isDirectProxied = false;
+      if (cfg.enableProxyForHeaders && headers.isNotEmpty) {
         final headersJson = jsonEncode(headers);
-        streamUrl = '$localBaseUrl/proxy?url=${Uri.encodeComponent(rawUrl)}'
+        directStreamUrl = '$localBaseUrl/proxy?url=${Uri.encodeComponent(rawUrl)}'
             '&headers=${Uri.encodeComponent(headersJson)}';
-        isProxied = true;
+        isDirectProxied = true;
       }
 
-      // ── behaviorHints ─────────────────────────────────────────────────
-      final behaviorHints = <String, dynamic>{
-        'notWebReady': !isProxied && !isTorboxCached && headers.isNotEmpty,
+      final directBehaviorHints = <String, dynamic>{
+        'notWebReady': !isDirectProxied && headers.isNotEmpty,
       };
-
-      if (headers.isNotEmpty && !isProxied && !isTorboxCached) {
-        behaviorHints['proxyHeaders'] = {'request': headers};
+      if (headers.isNotEmpty && !isDirectProxied) {
+        directBehaviorHints['proxyHeaders'] = {'request': headers};
       }
 
-      // ── Enrich Stream Links Using BadgeService JSON Filters ───────────
       String rawTitle = src.title ?? src.name ?? meta.title;
       rawTitle = rawTitle
           .replaceAll(RegExp(r'PlayTorrio(HTTP)?', caseSensitive: false), 'MegaScraper')
           .replaceAll(RegExp(r'\b(saket|sakinator)\b', caseSensitive: false), '')
           .trim();
-      final enriched = BadgeService.enrichStream(
+
+      final directEnriched = BadgeService.enrichStream(
         rawTitle: rawTitle,
         mediaTitle: meta.title,
         year: meta.year,
@@ -194,26 +215,63 @@ class ScraperEngine {
         codec: src.codec,
         audioBadge: badge,
         fileSize: src.fileSize,
-        providerName: providerName,
-        isCached: isTorboxCached,
+        providerName: isSupportedHoster ? '$providerName [Direct]' : providerName,
+        isCached: false,
         isHls: isHls,
-        isProxied: isProxied,
+        isProxied: isDirectProxied,
       );
 
-      finalStreams.add(ScrapedStream(
-        name: enriched['name']!,
-        title: enriched['title']!,
-        url: streamUrl,
-        behaviorHints: behaviorHints,
-        provider: providerName,
-        quality: q,
-      ));
+      final qLabel = q.isNotEmpty ? q : (isHls ? 'HLS' : 'HD');
+      final subList = src.subtitles?.map((s) => {
+        'id': s.language,
+        'url': s.downloadUrl,
+        'lang': s.language,
+      }).toList();
 
-      // ── If not cached but supported by TorBox, provide 1-click "Cache via Nuvio" stream ──
-      if (!isTorboxCached && torboxKey.isNotEmpty && TorboxService.instance.isSupportedHoster(rawUrl)) {
+      if (isTorboxCached) {
+        // ── 1. Link is ALREADY TorBox cached: show 2 links (Cached + Uncached) ──
+        final torboxPlayUrl = '$localBaseUrl/torbox/play?url=${Uri.encodeComponent(rawUrl)}';
+        final cachedEnriched = BadgeService.enrichStream(
+          rawTitle: rawTitle,
+          mediaTitle: meta.title,
+          year: meta.year,
+          season: meta.season,
+          episode: meta.episode,
+          quality: q,
+          codec: src.codec,
+          audioBadge: badge,
+          fileSize: src.fileSize,
+          providerName: '$providerName [TorBox Cached]',
+          isCached: true,
+          isHls: false,
+          isProxied: false,
+        );
+
+        // 1a. Cached Link (instant TorBox CDN stream)
+        finalStreams.add(ScrapedStream(
+          name: 'TorBox [Cached]\n$qLabel',
+          title: '${cachedEnriched['title']}\n⚡ Cached on TorBox CDN • Instant High-Speed Playback',
+          url: torboxPlayUrl,
+          behaviorHints: const {'notWebReady': false},
+          provider: '$providerName (TorBox Cached)',
+          quality: q,
+          subtitles: subList,
+        ));
+
+        // 1b. Uncached Link (original direct hoster link)
+        finalStreams.add(ScrapedStream(
+          name: directEnriched['name']!,
+          title: '${directEnriched['title']}\n🌐 Original Direct Hoster Link (Uncached)',
+          url: directStreamUrl,
+          behaviorHints: directBehaviorHints,
+          provider: providerName,
+          quality: q,
+          subtitles: subList,
+        ));
+      } else if (isSupportedHoster) {
+        // ── 2. Link is NOT cached but IS cachable: show 2 links (Click to Cache + Uncached) ──
         final headersParam = headers.isNotEmpty ? '&headers=${Uri.encodeComponent(jsonEncode(headers))}' : '';
         final cachePlayUrl = '$localBaseUrl/torbox/play?url=${Uri.encodeComponent(rawUrl)}$headersParam';
-        final qLabel = q.isNotEmpty ? q : 'HD';
 
         final cacheEnriched = BadgeService.enrichStream(
           rawTitle: rawTitle,
@@ -231,22 +289,58 @@ class ScraperEngine {
           isProxied: false,
         );
 
+        // 2a. Click to Cache Link (initiates cloud caching on TorBox)
         finalStreams.add(ScrapedStream(
-          name: 'TorBox Cache\n$qLabel',
+          name: 'TorBox [Cache]\n$qLabel',
           title: '${cacheEnriched['title']}\n⚡ Click via Nuvio to cache to TorBox & start playback',
           url: cachePlayUrl,
           behaviorHints: const {'notWebReady': false},
-          provider: '$providerName (TorBox)',
+          provider: '$providerName (TorBox Cache)',
           quality: q,
+          subtitles: subList,
+        ));
+
+        // 2b. Uncached Link (original direct stream link)
+        finalStreams.add(ScrapedStream(
+          name: directEnriched['name']!,
+          title: '${directEnriched['title']}\n🌐 Original Direct Hoster Link (Uncached)',
+          url: directStreamUrl,
+          behaviorHints: directBehaviorHints,
+          provider: providerName,
+          quality: q,
+          subtitles: subList,
+        ));
+      } else {
+        // ── 3. Standard Non-Hoster / Direct Stream (1 link) ──
+        finalStreams.add(ScrapedStream(
+          name: directEnriched['name']!,
+          title: directEnriched['title']!,
+          url: directStreamUrl,
+          behaviorHints: directBehaviorHints,
+          provider: providerName,
+          quality: q,
+          subtitles: subList,
         ));
       }
     }
 
-    // Sort: 4K > 1080p > 720p > 480p > unknown
-    finalStreams.sort((a, b) => _qualityRank(b.quality).compareTo(_qualityRank(a.quality)));
+    // Sort: Resolution first (4K > 1080p > 720p > 480p), then Cached > Cache > Direct
+    finalStreams.sort((a, b) => _streamRank(b).compareTo(_streamRank(a)));
 
     print('[ScraperEngine] Found ${finalStreams.length} stream(s) for "${meta.title}".');
     return finalStreams;
+  }
+
+  static int _streamRank(ScrapedStream s) {
+    int rank = _qualityRank(s.quality) * 10;
+    if (s.name.contains('[Cached]')) {
+      rank += 3;
+    } else if (s.name.contains('[Cache]')) {
+      rank += 2;
+    } else {
+      rank += 1;
+    }
+    return rank;
   }
 
   static int _qualityRank(String? q) {

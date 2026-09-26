@@ -1,5 +1,79 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
+import 'mpd_converter.dart';
+
+class _CachedSegment {
+  final Uint8List data;
+  final String contentType;
+  final DateTime expiresAt;
+
+  _CachedSegment({
+    required this.data,
+    required this.contentType,
+    required this.expiresAt,
+  });
+
+  bool get isExpired => DateTime.now().isAfter(expiresAt);
+}
+
+/// In-memory LRU Ring Buffer Segment Cache to eliminate micro-stutter on seek/rewind.
+class SegmentCache {
+  static final Map<String, _CachedSegment> _cache = {};
+  static final List<String> _order = [];
+  static int _totalBytes = 0;
+
+  static const int maxBytes = 35 * 1024 * 1024; // 35 MB RAM limit
+  static const int maxEntries = 40;
+
+  static _CachedSegment? get(String url) {
+    final entry = _cache[url];
+    if (entry == null) return null;
+    if (entry.isExpired) {
+      remove(url);
+      return null;
+    }
+    // Move to end (most recently used)
+    _order.remove(url);
+    _order.add(url);
+    return entry;
+  }
+
+  static void put(String url, Uint8List data, String contentType, {bool isInit = false}) {
+    if (data.length > 8 * 1024 * 1024) return; // Don't cache oversized chunks
+
+    // Evict if exists
+    remove(url);
+
+    // Evict oldest until within limits
+    while (_order.isNotEmpty && (_totalBytes + data.length > maxBytes || _cache.length >= maxEntries)) {
+      remove(_order.first);
+    }
+
+    final ttl = isInit ? const Duration(minutes: 10) : const Duration(seconds: 90);
+    _cache[url] = _CachedSegment(
+      data: data,
+      contentType: contentType,
+      expiresAt: DateTime.now().add(ttl),
+    );
+    _order.add(url);
+    _totalBytes += data.length;
+  }
+
+  static void remove(String url) {
+    final old = _cache.remove(url);
+    if (old != null) {
+      _order.remove(url);
+      _totalBytes -= old.data.length;
+    }
+  }
+
+  static void clear() {
+    _cache.clear();
+    _order.clear();
+    _totalBytes = 0;
+  }
+}
 
 class StreamProxy {
   static final HttpClient _client = HttpClient()
@@ -11,6 +85,7 @@ class StreamProxy {
   static Future<void> handleRequest(HttpRequest request) async {
     final query = request.uri.queryParameters;
     final targetUrl = query['url'];
+    final repId = query['rep_id'];
 
     if (targetUrl == null || targetUrl.isEmpty) {
       request.response
@@ -28,6 +103,23 @@ class StreamProxy {
         ..statusCode = HttpStatus.badRequest
         ..write('Invalid target url: $e')
         ..close();
+      return;
+    }
+
+    // ── Check In-Memory Segment Cache (Ring Buffer) ──
+    final cached = SegmentCache.get(targetUrl);
+    if (cached != null) {
+      request.response.statusCode = HttpStatus.ok;
+      request.response.headers.set('Access-Control-Allow-Origin', '*');
+      request.response.headers.set('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+      request.response.headers.set('Access-Control-Allow-Headers', '*');
+      request.response.headers.set('X-Proxy-Cache', 'HIT');
+      if (cached.contentType.isNotEmpty) {
+        request.response.headers.set('Content-Type', cached.contentType);
+      }
+      request.response.headers.contentLength = cached.data.length;
+      request.response.add(cached.data);
+      await request.response.close();
       return;
     }
 
@@ -63,12 +155,13 @@ class StreamProxy {
 
       final contentType = res.headers.contentType?.mimeType.toLowerCase() ?? '';
       final isHls = contentType.contains('mpegurl') || targetUrl.contains('.m3u8');
+      final isMpd = contentType.contains('dash+xml') || targetUrl.contains('.mpd');
 
       // Copy response headers, excluding hop-by-hop and encoding headers for rewritten content
       res.headers.forEach((name, values) {
         final lower = name.toLowerCase();
         if (lower == 'connection' || lower == 'transfer-encoding') return;
-        if (isHls && (lower == 'content-encoding' || lower == 'content-length')) {
+        if ((isHls || isMpd) && (lower == 'content-encoding' || lower == 'content-length')) {
           // Decompressed plaintext body is rewritten; do not copy original gzip encoding/length
           return;
         }
@@ -81,15 +174,34 @@ class StreamProxy {
       request.response.headers.set('Access-Control-Allow-Origin', '*');
       request.response.headers.set('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
       request.response.headers.set('Access-Control-Allow-Headers', '*');
+      request.response.headers.set('X-Proxy-Cache', 'MISS');
 
-      if (isHls && res.statusCode == HttpStatus.ok) {
-        // Rewrite HLS playlist relative URLs
+      final proxyBaseUrl = '${request.requestedUri.scheme}://${request.requestedUri.host}:${request.requestedUri.port}/proxy';
+
+      if (isMpd && res.statusCode == HttpStatus.ok) {
+        // ── MPEG-DASH to virtual HLS conversion ──
+        final bytes = await res.fold<List<int>>([], (prev, elem) => prev..addAll(elem));
+        final body = utf8.decode(bytes, allowMalformed: true);
+        final hlsPlaylist = MpdConverter.convertMpdToHls(
+          mpdXml: body,
+          baseUri: targetUri,
+          proxyBaseUrl: proxyBaseUrl,
+          customHeadersJson: query['headers'] ?? '',
+          selectedRepId: repId,
+        );
+        final encoded = utf8.encode(hlsPlaylist);
+        request.response.headers.contentType = ContentType('application', 'vnd.apple.mpegurl', charset: 'utf-8');
+        request.response.headers.contentLength = encoded.length;
+        request.response.add(encoded);
+        await request.response.close();
+      } else if (isHls && res.statusCode == HttpStatus.ok) {
+        // ── Rewrite HLS playlist relative URLs ──
         final bytes = await res.fold<List<int>>([], (prev, elem) => prev..addAll(elem));
         final body = utf8.decode(bytes, allowMalformed: true);
         final rewritten = _rewriteHlsPlaylist(
           body: body,
           baseUri: targetUri,
-          proxyBaseUrl: '${request.requestedUri.scheme}://${request.requestedUri.host}:${request.requestedUri.port}/proxy',
+          proxyBaseUrl: proxyBaseUrl,
           customHeadersJson: query['headers'] ?? '',
         );
         final encoded = utf8.encode(rewritten);
@@ -98,8 +210,25 @@ class StreamProxy {
         request.response.add(encoded);
         await request.response.close();
       } else {
-        await request.response.addStream(res);
-        await request.response.close();
+        // Media segment or direct file
+        final isMediaSegment = targetUrl.contains('.ts') ||
+            targetUrl.contains('.m4s') ||
+            targetUrl.contains('.mp4') ||
+            targetUrl.contains('.aac');
+
+        if (isMediaSegment && res.statusCode == HttpStatus.ok) {
+          final bytes = await res.fold<List<int>>([], (prev, elem) => prev..addAll(elem));
+          final uint8Data = Uint8List.fromList(bytes);
+          final isInit = targetUrl.contains('init') || targetUrl.contains('map');
+          SegmentCache.put(targetUrl, uint8Data, contentType, isInit: isInit);
+
+          request.response.headers.contentLength = uint8Data.length;
+          request.response.add(uint8Data);
+          await request.response.close();
+        } else {
+          await request.response.addStream(res);
+          await request.response.close();
+        }
       }
     } catch (e) {
       try {
@@ -131,7 +260,7 @@ class StreamProxy {
       }
 
       if (trimmed.startsWith('#')) {
-        // Check for URI in tags like #EXT-X-KEY:METHOD=AES-128,URI="..."
+        // Check for URI in tags like #EXT-X-KEY:METHOD=AES-128,URI="..." or #EXT-X-MAP:URI="..."
         if (trimmed.contains('URI="')) {
           final rewrittenTag = trimmed.replaceAllMapped(
             RegExp(r'URI="([^"]+)"'),

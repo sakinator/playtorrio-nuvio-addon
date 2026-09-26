@@ -7,8 +7,26 @@ import 'package:playtorrio_nuvio_addon/scraper_engine.dart';
 import 'package:playtorrio_nuvio_addon/web_ui.dart';
 import 'package:playtorrio_nuvio_addon/catalog_service.dart';
 import 'package:playtorrio_nuvio_addon/torbox_service.dart';
+import 'package:playtorrio_nuvio_addon/doh_resolver.dart';
 
 void main(List<String> args) async {
+  // ── Global DNS-over-HTTPS (DoH) & Pre-Warming ─────────────────────────────
+  HttpOverrides.global = MegascraperHttpOverrides();
+  DohResolver.instance.prewarm([
+    'api.torbox.app',
+    'cinematv.click',
+    'vidsrc.to',
+    'vidlink.pro',
+    'autoembed.cc',
+    'embed.su',
+    'rabbitstream.net',
+    'megacloud.tv',
+    '1337x.to',
+    'torrentgalaxy.to',
+    'vegamovies.im',
+    'hdhub4u.tv',
+  ]);
+
   // ── CWD fix ──────────────────────────────────────────────────────────────
   // All file paths in the app (data/config.json, upstream/..., etc.) are
   // relative. Lock the CWD to the project root now so they resolve correctly
