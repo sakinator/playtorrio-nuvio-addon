@@ -178,31 +178,43 @@ class TorboxService {
 
   /// Uploads / sends a web download link to Torbox to cache/download it
   Future<Map<String, dynamic>> uploadToTorbox(String url, String apiKey) async {
-    if (apiKey.isEmpty) {
+    final cleanKey = apiKey.trim();
+    if (cleanKey.isEmpty) {
       return {'success': false, 'message': 'Torbox API key not configured'};
+    }
+    final cleanUrl = url.trim();
+    if (cleanUrl.isEmpty) {
+      return {'success': false, 'message': 'Empty link provided'};
     }
     try {
       final createUrl = Uri.parse('$_apiBase/webdl/createwebdownload');
       final res = await http.post(
         createUrl,
-        headers: _headers(apiKey, isJson: true),
-        body: jsonEncode({
-          'link': url.trim(),
-          'url': url.trim(),
-        }),
-      ).timeout(const Duration(seconds: 8));
+        headers: {
+          'User-Agent': _defaultUserAgent,
+          'Authorization': 'Bearer $cleanKey',
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: {
+          'link': cleanUrl,
+        },
+      ).timeout(const Duration(seconds: 12));
 
       final data = jsonDecode(res.body);
       if (res.statusCode == 200 && data is Map && data['success'] == true) {
         return {
           'success': true,
-          'message': data['detail'] ?? 'Successfully uploaded to Torbox!',
+          'message': data['detail']?.toString() ?? 'Successfully queued to Torbox!',
           'data': data['data'],
         };
       } else {
+        String errorMsg = 'Upload failed';
+        if (data is Map) {
+          errorMsg = data['detail']?.toString() ?? data['error']?.toString() ?? 'HTTP ${res.statusCode}';
+        }
         return {
           'success': false,
-          'message': data is Map ? (data['detail'] ?? 'Upload failed') : 'HTTP ${res.statusCode}',
+          'message': errorMsg,
         };
       }
     } catch (e) {
@@ -212,17 +224,18 @@ class TorboxService {
 
   /// Initiates or retrieves a debrided Torbox web download stream URL
   Future<String?> debridLink(String url, String apiKey) async {
-    if (apiKey.isEmpty) return null;
+    final cleanKey = apiKey.trim();
+    if (cleanKey.isEmpty) return null;
     try {
-      final res = await uploadToTorbox(url, apiKey);
+      final res = await uploadToTorbox(url, cleanKey);
       if (res['success'] == true) {
         final webId = res['data']?['webdownload_id'] ?? res['data']?['id'];
         if (webId != null) {
           // Request direct streaming link
           final dlRes = await http.get(
-            Uri.parse('$_apiBase/webdl/requestdl?token=$apiKey&web_id=$webId'),
-            headers: _headers(apiKey),
-          ).timeout(const Duration(seconds: 5));
+            Uri.parse('$_apiBase/webdl/requestdl?token=$cleanKey&web_id=$webId'),
+            headers: _headers(cleanKey),
+          ).timeout(const Duration(seconds: 6));
 
           if (dlRes.statusCode == 200) {
             final dlData = jsonDecode(dlRes.body);

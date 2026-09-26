@@ -1169,16 +1169,23 @@ class WebUI {
       }
     }
 
-    async function uploadLinkToTorbox(targetUrl) {
-      const url = targetUrl || document.getElementById('torboxUploadUrl').value.trim();
+    async function uploadLinkToTorbox(targetUrl, btnElement) {
+      const url = targetUrl || (document.getElementById('torboxUploadUrl') ? document.getElementById('torboxUploadUrl').value.trim() : '');
       const status = document.getElementById('torboxUploadStatus');
       if (!url) {
         showToast('Please enter a link to cache');
         return;
       }
 
-      status.style.display = 'block';
-      status.innerHTML = '<span style="color:var(--blue);">Submitting link to TorBox cloud cache...</span>';
+      if (btnElement) {
+        btnElement.disabled = true;
+        btnElement.innerText = '⏳ Caching...';
+      }
+
+      if (status) {
+        status.style.display = 'block';
+        status.innerHTML = '<span style="color:var(--blue);">Submitting link to TorBox cloud cache...</span>';
+      }
 
       try {
         const res = await fetch('/api/torbox/upload', {
@@ -1188,14 +1195,26 @@ class WebUI {
         });
         const data = await res.json();
         if (data.success) {
-          status.innerHTML = '<span style="color:var(--green);">✅ ' + escapeHtml(data.message) + '</span>';
-          showToast('✅ Queued to TorBox Cache!');
+          if (status) status.innerHTML = '<span style="color:var(--green);">✅ ' + escapeHtml(data.message) + '</span>';
+          showToast('✅ ' + (data.message || 'Queued to TorBox Cache!'));
+          if (btnElement) {
+            btnElement.innerText = '✅ Caching Started';
+          }
         } else {
-          status.innerHTML = '<span style="color:#f85149;">❌ ' + escapeHtml(data.message) + '</span>';
-          showToast('❌ Failed: ' + data.message);
+          if (status) status.innerHTML = '<span style="color:#f85149;">❌ ' + escapeHtml(data.message) + '</span>';
+          showToast('❌ ' + (data.message || 'Cache failed'));
+          if (btnElement) {
+            btnElement.disabled = false;
+            btnElement.innerText = '🌐 Cache to TorBox';
+          }
         }
       } catch (e) {
-        status.innerHTML = '<span style="color:#f85149;">Upload error: ' + e + '</span>';
+        if (status) status.innerHTML = '<span style="color:#f85149;">Upload error: ' + e + '</span>';
+        showToast('❌ Upload error: ' + e);
+        if (btnElement) {
+          btnElement.disabled = false;
+          btnElement.innerText = '🌐 Cache to TorBox';
+        }
       }
     }
 
@@ -1298,7 +1317,7 @@ class WebUI {
             title: rawTitle,
             url: finalUrl,
             isCached: rawName.includes('[Cached]') || rawTitle.includes('Cached on TorBox'),
-            isCache: rawName.toLowerCase().includes('cachable') || rawName.includes('[Cache]') || rawTitle.toLowerCase().includes('cachable'),
+            isCache: rawName.toLowerCase().includes('cachable') || rawName.includes('Start Caching') || rawName.includes('[Cache]') || rawTitle.toLowerCase().includes('cachable') || rawTitle.toLowerCase().includes('start caching'),
             is4K: rawName.includes('4K') || rawTitle.includes('[4K]'),
             is1080p: rawName.includes('1080p') || rawTitle.includes('[FHD]') || rawTitle.includes('1080p'),
           };
@@ -1361,7 +1380,7 @@ class WebUI {
         html += '    <button class="btn btn-primary" onclick="copyStreamUrl(' + s.index + ')">📋 Copy URL</button>';
         html += '    <a class="btn" href="' + s.url + '" target="_blank" rel="noreferrer">🔗 Open URL</a>';
         if (!isTorbox) {
-          html += '    <button class="btn btn-success" onclick="uploadLinkToTorbox(\\'' + escapeHtml(s.url) + '\\')">🌐 Cache to TorBox</button>';
+          html += '    <button class="btn btn-success" onclick="uploadLinkToTorbox(\\'' + escapeHtml(s.url) + '\\', this)">🌐 Cache to TorBox</button>';
         }
         html += '  </div>';
         html += '</div>';

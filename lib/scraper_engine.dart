@@ -347,17 +347,19 @@ class ScraperEngine {
         finalStreams.add(cachedStream);
         streamDedupeMap[rawUrl] = cachedStream;
 
-        finalStreams.add(ScrapedStream(
-          name: directEnriched['name']!,
+        final directBadge = directEnriched['badgeHeader'] ?? qLabel;
+        final directStream = ScrapedStream(
+          name: '🌐 Direct Play [$providerName]\n$directBadge',
           title: '${directEnriched['title']}\n🌐 Direct Play • Original Hoster Link',
           url: directStreamUrl,
           behaviorHints: directBehaviorHints,
           provider: providerName,
           quality: q,
           subtitles: subList,
-        ));
+        );
+        finalStreams.add(directStream);
       } else if (isSupportedHoster) {
-        // ── 2. Link is NOT cached but IS cachable: show 2 links (TorBox Cachable + Direct Play) ──
+        // ── 2. Link is NOT cached but IS cachable: show 2 links (TorBox Start Caching + Direct Play) ──
         final headersParam = headers.isNotEmpty ? '&headers=${Uri.encodeComponent(jsonEncode(headers))}' : '';
         final cachePlayUrl = '$localBaseUrl/torbox/play?url=${Uri.encodeComponent(rawUrl)}$headersParam';
 
@@ -379,18 +381,20 @@ class ScraperEngine {
         );
 
         final cacheBadge = cacheEnriched['badgeHeader'] ?? qLabel;
-        finalStreams.add(ScrapedStream(
-          name: '🌐 TorBox [Cachable]\n$cacheBadge',
-          title: '${cacheEnriched['title']}\n🌐 TorBox Cachable • Click to cache & stream via TorBox',
+        final startCachingStream = ScrapedStream(
+          name: '🌐 TorBox [Start Caching]\n$cacheBadge',
+          title: '${cacheEnriched['title']}\n🌐 TorBox Cachable • Click to start caching on TorBox cloud & stream',
           url: cachePlayUrl,
           behaviorHints: const {'notWebReady': false},
           provider: '$providerName (TorBox Cachable)',
           quality: q,
           subtitles: subList,
-        ));
+        );
+        finalStreams.add(startCachingStream);
 
+        final directBadge = directEnriched['badgeHeader'] ?? qLabel;
         final directStream = ScrapedStream(
-          name: directEnriched['name']!,
+          name: '🌐 Direct Play [$providerName]\n$directBadge',
           title: '${directEnriched['title']}\n🌐 Direct Play • Original Hoster Link',
           url: directStreamUrl,
           behaviorHints: directBehaviorHints,
@@ -402,8 +406,9 @@ class ScraperEngine {
         streamDedupeMap[rawUrl] = directStream;
       } else {
         // ── 3. Standard Non-Hoster / Direct Stream (1 link) ──
+        final directBadge = directEnriched['badgeHeader'] ?? qLabel;
         final directStream = ScrapedStream(
-          name: directEnriched['name']!,
+          name: '🌐 Direct Play [$providerName]\n$directBadge',
           title: directEnriched['title']!,
           url: directStreamUrl,
           behaviorHints: directBehaviorHints,
